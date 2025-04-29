@@ -1,9 +1,9 @@
 import CompanyHero from '@/components/companies/hero';
 import CompanyBenefits from '@/components/companies/benefits';
 import CompanyInfo from '@/components/companies/info';
-import CompanyTestimonials from '@/components/companies/testimonials';
+// import CompanyTestimonials from '@/components/companies/testimonials';
 import CompanyPricing from '@/components/companies/pricing';
-import CompanyFAQ from '@/components/companies/faq';
+// import CompanyFAQ from '@/components/companies/faq';
 import CompanyCTA from '@/components/companies/cta';
 
 export default function CompaniesPage() {
@@ -12,9 +12,9 @@ export default function CompaniesPage() {
       <CompanyHero />
       <CompanyBenefits />
       <CompanyInfo />
-      <CompanyTestimonials />
+      {/* <CompanyTestimonials /> */}
       <CompanyPricing />
-      <CompanyFAQ />
+      {/* <CompanyFAQ /> */}
       <CompanyCTA />
     </div>
   );
