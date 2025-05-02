@@ -83,7 +83,7 @@ export default function Impact() {
                     <Progress 
                       className="h-2" 
                       value={(metric.value / metric.target) * 100}
-                      style={{ '--progress-background': `hsl(var(--${metric.color}))` }}
+                      style={{ ['--progress-background' as any]: `hsl(var(--${metric.color}))` }}
                     />
                   </CardContent>
                 </Card>

@@ -71,16 +71,11 @@ export default function Navbar() {
             ))}
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-5">
             <ThemeToggle />
             <Link href="/login">
-              <Button variant="outline" size="sm">
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup">
               <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
-                Sign Up
+                Login
               </Button>
             </Link>
           </div>
