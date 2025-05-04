@@ -2,8 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import Navbar from '@/components/layout/navbar';
+import FooterWrapper from '@/components/layout/footer-wrapper';
 import { Toaster } from '@/components/ui/toaster';
-import ConditionalLayout from '@/components/layout/conditional-layout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,9 +27,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConditionalLayout>
-            {children}
-          </ConditionalLayout>
+          <Navbar />
+          <main>{children}</main>
+          <FooterWrapper />
           <Toaster />
         </ThemeProvider>
       </body>

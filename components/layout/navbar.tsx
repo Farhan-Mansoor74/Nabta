@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LucideLeaf, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,9 +15,13 @@ const publicRoutes = [
   { name: 'About Us', href: '/about' },
 ];
 
-export default function Navbar({ isLoggedIn = false }) {
+export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  
+  // Determine if we're on a logged-in page
+  const isLoggedIn = pathname === '/volunteer-dashboard';
 
   useEffect(() => {
     const handleScroll = () => {
