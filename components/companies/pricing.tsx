@@ -121,7 +121,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Choose the plan that best fits your organization's volunteering needs and impact goals
+            Choose the plan that best fits your organization&apos;s volunteering needs and impact goals
           </p>
           
           <div className="flex items-center justify-center mt-8">
@@ -225,7 +225,7 @@ export default function Pricing() {
         
         <div className="mt-20 text-center">
           <p className="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Need a custom solution? <a href="#contact" className="font-medium text-emerald-600 dark:text-emerald-500 hover:underline">Contact our sales team</a> to design a plan that perfectly meets your organization's unique requirements.
+            Need a custom solution? <a href="#contact" className="font-medium text-emerald-600 dark:text-emerald-500 hover:underline">Contact our sales team</a> to design a plan that perfectly meets your organization&apos;s unique requirements.
           </p>
         </div>
       </div>

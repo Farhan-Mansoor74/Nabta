@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LucideLeaf, Menu, X } from 'lucide-react';
+import { LucideLeaf, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ThemeToggle from './theme-toggle';
 
-const routes = [
+const publicRoutes = [
   { name: 'Home', href: '/' },
   { name: 'Opportunities', href: '/opportunities' },
   { name: 'For Companies', href: '/for-companies' },
   { name: 'About Us', href: '/about' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ isLoggedIn = false }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -54,30 +54,44 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <div className="flex space-x-6">
-            {routes.map((route) => (
-              <Link
-                key={route.name}
-                href={route.href}
-                className={cn(
-                  "font-medium transition-colors hover:text-emerald-600 dark:hover:text-emerald-400",
-                  isScrolled 
-                    ? "text-gray-700 dark:text-gray-300" 
-                    : "text-gray-700 dark:text-gray-300"
-                )}
-              >
-                {route.name}
-              </Link>
-            ))}
-          </div>
+          {!isLoggedIn && (
+            <div className="flex space-x-6">
+              {publicRoutes.map((route) => (
+                <Link
+                  key={route.name}
+                  href={route.href}
+                  className={cn(
+                    "font-medium transition-colors hover:text-emerald-600 dark:hover:text-emerald-400",
+                    isScrolled 
+                      ? "text-gray-700 dark:text-gray-300" 
+                      : "text-gray-700 dark:text-gray-300"
+                  )}
+                >
+                  {route.name}
+                </Link>
+              ))}
+            </div>
+          )}
           
           <div className="flex items-center space-x-5">
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
-                Login
+            {isLoggedIn ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center space-x-1"
+                onClick={() => window.location.href = '/'}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                <span>Logout</span>
               </Button>
-            </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
         </nav>
 
@@ -103,28 +117,48 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full bg-white dark:bg-gray-900 shadow-lg py-4 px-4 transition-all duration-300 ease-in-out">
           <nav className="flex flex-col space-y-4">
-            {routes.map((route) => (
-              <Link
-                key={route.name}
-                href={route.href}
-                className="font-medium px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {route.name}
-              </Link>
-            ))}
-            <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full justify-center">
-                  Login
+            {!isLoggedIn ? (
+              // Show regular navigation for non-logged in users
+              <>
+                {publicRoutes.map((route) => (
+                  <Link
+                    key={route.name}
+                    href={route.href}
+                    className="font-medium px-2 py-2 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {route.name}
+                  </Link>
+                ))}
+                <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full justify-center">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full justify-center bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              // Show logout option for logged in users
+              <div className="flex flex-col space-y-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-center flex items-center"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    window.location.href = '/';
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Logout</span>
                 </Button>
-              </Link>
-              <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full justify-center bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
-                  Sign Up
-                </Button>
-              </Link>
-            </div>
+              </div>
+            )}
           </nav>
         </div>
       )}

@@ -16,45 +16,66 @@ export default function VolunteerSignup() {
     confirmPassword: '',
     agreeTerms: false
   });
-  
+
   const handleChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleCheckboxChange = (checked: any) => {
     setFormData(prev => ({ ...prev, agreeTerms: checked }));
   };
-  
-  const handleSubmit = () => {
-    // Validate form
+
+  const handleSubmit = async () => {
     if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
       alert('Please fill in all fields');
       return;
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    
+
     if (!formData.agreeTerms) {
       alert('Please agree to the terms and conditions');
       return;
     }
-    
-    console.log('Signing up volunteer:', formData);
-    // In a real app, you would make an API call here
+
+    try {
+      const response = await fetch('http://localhost:3500/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || 'Something went wrong');
+      } else {
+        alert('Volunteer registered successfully!');
+        // Optionally redirect or reset form
+      }
+    } catch (err) {
+      alert('Server error');
+      console.error(err);
+    }
   };
-  
+
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex items-center mb-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="p-0 mr-2"
               onClick={() => window.history.back()}
             >
@@ -71,57 +92,57 @@ export default function VolunteerSignup() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
-            <Input 
-              id="username" 
+            <Input
+              id="username"
               name="username"
-              placeholder="johndoe" 
+              placeholder="johndoe"
               value={formData.username}
               onChange={handleChange}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Input
+              id="email"
               name="email"
-              type="email" 
-              placeholder="you@example.com" 
+              type="email"
+              placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
+            <Input
+              id="password"
               name="password"
-              type="password" 
+              type="password"
               value={formData.password}
               onChange={handleChange}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input 
+            <Input
               id="confirmPassword"
-              name="confirmPassword" 
-              type="password" 
+              name="confirmPassword"
+              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="terms" 
+            <Checkbox
+              id="terms"
               checked={formData.agreeTerms}
               onCheckedChange={handleCheckboxChange}
             />
-            <Label 
-              htmlFor="terms" 
+            <Label
+              htmlFor="terms"
               className="text-sm text-gray-600 dark:text-gray-400"
             >
               I agree to the{" "}
@@ -132,7 +153,7 @@ export default function VolunteerSignup() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
+          <Button
             className="w-full bg-emerald-600 hover:bg-emerald-700"
             onClick={handleSubmit}
           >

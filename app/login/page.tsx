@@ -13,13 +13,33 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  const handleLogin = (type: string) => {
-    // Handle login logic here
-    console.log(`Logging in as ${type} with email: ${email}`);
-    // In a real app, you would make an API call here
+
+  const handleLogin = async (type: string) => {
+    try {
+      const res = await fetch('http://localhost:3500/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      console.log('Login success:', data);
+
+      // Store token if needed
+      localStorage.setItem('token', data.token);
+
+      // Navigate based on type
+      if (type === 'volunteer') router.push('/volunteer-dashboard');
+      else router.push('/company-dashboard');
+
+    } catch (err: any) {
+      alert(err.message || 'Login error');
+    }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -41,15 +61,15 @@ export default function LoginPage() {
                 <span>Company</span>
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="volunteer">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="volunteer-email">Email</Label>
-                  <Input 
-                    id="volunteer-email" 
-                    type="email" 
-                    placeholder="you@example.com" 
+                  <Input
+                    id="volunteer-email"
+                    type="email"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -61,14 +81,14 @@ export default function LoginPage() {
                       Forgot password?
                     </a>
                   </div>
-                  <Input 
-                    id="volunteer-password" 
-                    type="password" 
+                  <Input
+                    id="volunteer-password"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <Button 
+                <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                   onClick={() => handleLogin('volunteer')}
                 >
@@ -76,15 +96,15 @@ export default function LoginPage() {
                 </Button>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="company">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-email">Company Email</Label>
-                  <Input 
-                    id="company-email" 
-                    type="email" 
-                    placeholder="you@company.com" 
+                  <Input
+                    id="company-email"
+                    type="email"
+                    placeholder="you@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -96,14 +116,14 @@ export default function LoginPage() {
                       Forgot password?
                     </a>
                   </div>
-                  <Input 
-                    id="company-password" 
-                    type="password" 
+                  <Input
+                    id="company-password"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <Button 
+                <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                   onClick={() => handleLogin('company')}
                 >
@@ -115,13 +135,13 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-gray-600 dark:text-gray-400">
-            Don't have an account?
+            Don&apos;t have an account?
           </div>
           <div className="grid grid-cols-2 gap-4 w-full">
             <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/volunteer-signup')}>
-                <User className="h-4 w-4" />
-                <span>Volunteer</span>
-                <ArrowRight className="h-4 w-4 ml-1" />
+              <User className="h-4 w-4" />
+              <span>Volunteer</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
 
             <Button variant="outline" className="flex items-center gap-2" onClick={() => router.push('/company-signup')}>

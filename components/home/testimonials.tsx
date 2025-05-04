@@ -110,7 +110,7 @@ export default function Testimonials() {
                       <Quote className="h-8 w-8 text-emerald-500/20 dark:text-emerald-400/20 mb-4" />
                       
                       <p className="text-gray-700 dark:text-gray-300 mb-6 italic">
-                        "{testimonial.quote}"
+                        &quot;{testimonial.quote}&quot;
                       </p>
                       
                       <div className="flex items-center">

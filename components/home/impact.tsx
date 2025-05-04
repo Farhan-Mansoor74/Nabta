@@ -54,7 +54,7 @@ export default function Impact() {
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Our Collective Impact</h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Together, we're making measurable progress toward a healthier planet. Every volunteer hour contributes to these growing impact metrics.
+            Together, we&apos;re making measurable progress toward a healthier planet. Every volunteer hour contributes to these growing impact metrics.
           </p>
         </div>
 
@@ -80,10 +80,12 @@ export default function Impact() {
                       <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{metric.name}</h3>
                       <span className="text-xs text-gray-500 dark:text-gray-500">Goal: {metric.target.toLocaleString()}</span>
                     </div>
-                    <Progress 
-                      className="h-2" 
+                    <Progress
+                      className="h-2"
                       value={(metric.value / metric.target) * 100}
-                      style={{ ['--progress-background' as any]: `hsl(var(--${metric.color}))` }}
+                      style={{
+                        "--progress-background": `hsl(var(--${metric.color}))`
+                      } as React.CSSProperties}
                     />
                   </CardContent>
                 </Card>
@@ -101,8 +103,8 @@ export default function Impact() {
                       onClick={() => setActiveMetric(metric)}
                       className={cn(
                         "px-3 py-1 rounded-full text-sm font-medium transition",
-                        activeMetric === metric 
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" 
+                        activeMetric === metric
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
                           : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                       )}
                     >
@@ -110,7 +112,7 @@ export default function Impact() {
                     </button>
                   ))}
                 </div>
-                
+
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -121,13 +123,12 @@ export default function Impact() {
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip />
-                      <Bar 
-                        dataKey={activeMetric} 
-                        fill={`hsl(var(--chart-${
-                          activeMetric === 'trees' ? '1' : 
-                          activeMetric === 'waste' ? '2' : '3'
-                        }))`}
-                        radius={[4, 4, 0, 0]} 
+                      <Bar
+                        dataKey={activeMetric}
+                        fill={`hsl(var(--chart-${activeMetric === 'trees' ? '1' :
+                            activeMetric === 'waste' ? '2' : '3'
+                          }))`}
+                        radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -160,13 +161,13 @@ export default function Impact() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Volunteer Participation by Category</h3>
                     <div className="space-y-4">
                       {impactMetrics.categories.map((category, index) => (
                         <div key={category.name} className="flex items-center">
-                          <div 
+                          <div
                             className="w-4 h-4 rounded-full mr-3"
                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                           ></div>
@@ -180,9 +181,9 @@ export default function Impact() {
                               </span>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full" 
-                                style={{ 
+                              <div
+                                className="h-2 rounded-full"
+                                style={{
                                   width: `${category.value}%`,
                                   backgroundColor: COLORS[index % COLORS.length]
                                 }}

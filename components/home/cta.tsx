@@ -62,7 +62,7 @@ export default function CTA() {
                       Ready to make a difference?
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-8">
-                      Whether you're a student looking to gain experience, a professional seeking to give back, or a company wanting to engage employees - we have opportunities for you.
+                      Whether you&apos;re a student looking to gain experience, a professional seeking to give back, or a company wanting to engage employees - we have opportunities for you.
                     </p>
                     
                     <div className="space-y-4 mb-8">
