@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { 
   Compass, 
-  Settings, 
+  Gift, 
   BarChart2, 
   Trophy, 
   User
@@ -20,8 +20,8 @@ export default function VolunteerDashboard() {
     { id: 'explore', label: 'Explore', icon: Compass },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   // Render content based on active tab
@@ -48,7 +48,7 @@ export default function VolunteerDashboard() {
       case 'dashboard':
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
-            <h1 className="text-2xl font-bold mb-6">Your Impact Dashboard</h1>
+            <h1 className="text-2xl font-bold mb-6">Your Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">Dashboard content will go here</p>
           </div>
         );
@@ -59,18 +59,17 @@ export default function VolunteerDashboard() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">Leaderboard content will go here</p>
           </div>
         );
+      case 'rewards':
+        return (
+          <div className="container mx-auto px-4 py-8 pb-24 pt-24">
+          <p className="text-gray-600 dark:text-gray-400">Rewards content will go here</p>
+          </div>
+        );
       case 'profile':
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
-            <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Profile content will go here</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="container mx-auto px-4 py-8 pb-24 pt-24">
-            <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Settings content will go here</p>
+          <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Profile content will go here</p>
           </div>
         );
       default:
