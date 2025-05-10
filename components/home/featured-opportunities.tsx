@@ -41,7 +41,7 @@ const opportunities = [
     date: "June 12, 2025",
     time: "8:00 AM - 2:00 PM",
     category: "Wildlife",
-    image: "https://images.pexels.com/photos/14864523/pexels-photo-14864523.jpeg",
+    image: "https://images.pexels.com/photos/31939149/pexels-photo-31939149/free-photo-of-trio-of-antelopes-resting-in-natural-habitat.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     participants: 35,
     spots: 50,
   },
