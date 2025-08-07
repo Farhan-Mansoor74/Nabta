@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowLeft, Building2, Upload, Check, ArrowRight } from 'lucide-react';
+import { signUpCompany } from '@/lib/utils';
 
 export default function CompanySignup() {
     const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
@@ -78,8 +79,25 @@ export default function CompanySignup() {
         setStage(1);
     };
 
-    const handleSubmit = () => {
-        console.log('Company signed up with:', formData);
+    const handleSubmit = async () => {
+        try {
+            const { error } = await signUpCompany({
+                companyName: formData.companyName,
+                industry: formData.industry,
+                website: formData.website,
+                email: formData.email,
+                password: formData.password,
+                pricingPlan: formData.pricingPlan,
+            });
+            if (error) {
+                alert(error.message || 'Signup failed.');
+            } else {
+                alert('Company registered successfully! Please check your email to verify your account.');
+                // Optionally redirect or reset form
+            }
+        } catch (err) {
+            alert('Signup failed.');
+        }
     };
 
     const industries = [

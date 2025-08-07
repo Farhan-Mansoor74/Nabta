@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, User } from 'lucide-react';
+import { signUpVolunteer } from '@/lib/utils';
 
 export default function VolunteerSignup() {
   const [formData, setFormData] = useState({
@@ -43,27 +44,18 @@ export default function VolunteerSignup() {
     }
 
     try {
-      const response = await fetch('http://localhost:3500/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password
-        }),
+      const { error } = await signUpVolunteer({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.message || 'Something went wrong');
+      if (error) {
+        alert(error.message || 'Signup failed.');
       } else {
-        alert('Volunteer registered successfully!');
-        // Optionally redirect or reset form
+        alert('Volunteer registered successfully! Please check your email to verify your account.');
       }
     } catch (err) {
-      alert('Server error');
-      console.error(err);
+      alert('Signup failed.');
     }
   };
 

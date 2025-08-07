@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Building2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { login } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,25 +17,13 @@ export default function LoginPage() {
 
   const handleLogin = async (type: string) => {
     try {
-      const res = await fetch('http://localhost:3500/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Login failed');
-
-      console.log('Login success:', data);
-
-      // Store token if needed
-      localStorage.setItem('token', data.token);
-
+      const { data, error } = await login({ email, password });
+      if (error) throw new Error(error.message || 'Login failed');
+      // Optionally store session/token if needed
+      // localStorage.setItem('token', data.session?.access_token);
       // Navigate based on type
       if (type === 'volunteer') router.push('/volunteer-dashboard');
       else router.push('/company-dashboard');
-
     } catch (err: any) {
       alert(err.message || 'Login error');
     }
