@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, User } from 'lucide-react';
 import { signUpVolunteer } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/hooks/useUser';
 
 export default function VolunteerSignup() {
   const [formData, setFormData] = useState({
@@ -17,6 +19,17 @@ export default function VolunteerSignup() {
     confirmPassword: '',
     agreeTerms: false
   });
+
+  const router = useRouter();
+  const { user, loading } = useUser();
+
+  useEffect(() => {
+    if (!loading && user) {
+      const role = user.user_metadata?.role;
+      if (role === 'volunteer') router.replace('/volunteer-dashboard');
+      else if (role === 'company') router.replace('/company-dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
@@ -58,7 +71,6 @@ export default function VolunteerSignup() {
       alert('Signup failed.');
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
