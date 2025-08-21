@@ -161,6 +161,7 @@ interface OpportunitiesListProps {
   selectedCategories: string[];
   showMobileFilters: boolean;
   setShowMobileFilters: (show: boolean) => void;
+  onLearnMore?: (eventId: number | string) => void;
 }
 
 export default function OpportunitiesList({
@@ -169,7 +170,8 @@ export default function OpportunitiesList({
   virtualOnly,
   selectedCategories,
   showMobileFilters,
-  setShowMobileFilters
+  setShowMobileFilters,
+  onLearnMore
 }: OpportunitiesListProps) {
   const [view, setView] = useState('grid');
   const [sortBy, setSortBy] = useState('distance');
@@ -537,7 +539,8 @@ export default function OpportunitiesList({
                         </div>
                         
                         <Link href={`/opportunities/${opportunity.id}`} className="w-full">
-                          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
+                          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                          onClick={() => onLearnMore && onLearnMore(opportunity.id)}>
                             Learn More
                           </Button>
                         </Link>

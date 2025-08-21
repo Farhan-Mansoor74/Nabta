@@ -22,26 +22,33 @@ import { Badge } from '@/components/ui/badge';
 import OpportunitiesHeader from '@/components/opportunities/header';
 import OpportunitiesList from '@/components/opportunities/list';
 import OpportunitiesFilters from '@/components/opportunities/filters';
+import { useRouter } from 'next/navigation';
 
 export default function VolunteerDashboard() {
   const [activeTab, setActiveTab] = useState('explore');
-  
+
   // Filter states - moved from list.tsx to page.tsx
   const [searchInput, setSearchInput] = useState('');
   const [distance, setDistance] = useState([25]);
   const [virtualOnly, setVirtualOnly] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  
+
   // Navigation items
   const navItems = [
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'chats', label: 'Chats', icon: MessageCircle },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'profile', label: 'Profile', icon: User },
   ];
-  
+
+  const router = useRouter();
+
+  // Handler for "Learn More"
+  const handleLearnMore = (eventId: number | string) => {
+    router.push(`/opportunities/${eventId}`);
+  };
+
   // State for chats
   const [activeChat, setActiveChat] = useState(0); // Store ID of active chat
 
@@ -193,25 +200,25 @@ export default function VolunteerDashboard() {
           <div className="pb-20"> {/* Add padding at bottom to account for navbar */}
             <div className="pt-16 min-h-screen">
               <OpportunitiesHeader />
-                              <div className="container mx-auto px-4 py-8">
-                  <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-                    <div className="xl:col-span-1 hidden xl:block">
-                      <OpportunitiesFilters 
-                        distance={distance}
-                        setDistance={setDistance}
-                        virtualOnly={virtualOnly}
-                        setVirtualOnly={setVirtualOnly}
-                        selectedCategories={selectedCategories}
-                        setSelectedCategories={setSelectedCategories}
-                        searchInput={searchInput}
-                        setSearchInput={setSearchInput}
-                      />
-                    </div>
-                    <div className="xl:col-span-3">
+              <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                  <div className="xl:col-span-1 hidden xl:block">
+                    <OpportunitiesFilters
+                      distance={distance}
+                      setDistance={setDistance}
+                      virtualOnly={virtualOnly}
+                      setVirtualOnly={setVirtualOnly}
+                      selectedCategories={selectedCategories}
+                      setSelectedCategories={setSelectedCategories}
+                      searchInput={searchInput}
+                      setSearchInput={setSearchInput}
+                    />
+                  </div>
+                  <div className="xl:col-span-3">
                     {/* Mobile/Tablet Filters - Only show below xl screens */}
                     <div className="xl:hidden mb-6">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => setShowMobileFilters(!showMobileFilters)}
                       >
@@ -223,10 +230,10 @@ export default function VolunteerDashboard() {
                           </Badge>
                         )}
                       </Button>
-                      
+
                       {showMobileFilters && (
                         <div className="mt-4">
-                          <OpportunitiesFilters 
+                          <OpportunitiesFilters
                             distance={distance}
                             setDistance={setDistance}
                             virtualOnly={virtualOnly}
@@ -239,16 +246,17 @@ export default function VolunteerDashboard() {
                         </div>
                       )}
                     </div>
-                    
-                    <OpportunitiesList 
+
+                    <OpportunitiesList
                       searchInput={searchInput}
                       distance={distance}
                       virtualOnly={virtualOnly}
                       selectedCategories={selectedCategories}
                       showMobileFilters={showMobileFilters}
                       setShowMobileFilters={setShowMobileFilters}
+                      onLearnMore={handleLearnMore}
                     />
-                    
+
                     {/* Exclusive Events Section */}
                     <div className="mt-12">
                       <div className="flex justify-between items-center mb-6">
@@ -258,7 +266,7 @@ export default function VolunteerDashboard() {
                       <p className="text-gray-600 dark:text-gray-400 mb-6">
                         Unlock premium volunteering experiences with your earned points
                       </p>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {exclusiveEvents.map(event => (
                           <div key={event.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -292,133 +300,7 @@ export default function VolunteerDashboard() {
             </div>
           </div>
         );
-      
-      case 'chats':
-        // Find active chat from state
-        const currentChat = chats.find(chat => chat.id === activeChat) || chats[0];
-        
-        // Sample messages for active chat
-        const chatMessages = [
-          { id: 1, text: "Hi everyone! Excited for tomorrow's event!", sender: "Jane", time: "10:30 AM", isSelf: false },
-          { id: 2, text: "Me too! What time do we need to arrive?", sender: "Ali", time: "10:35 AM", isSelf: false },
-          { id: 3, text: "The reporting time is 7:30 AM at Jumeirah Beach entrance. Don't forget to bring your volunteer ID and water bottle!", sender: "Organizer", time: "10:40 AM", isSelf: false },
-          { id: 4, text: "Will transport be provided?", sender: "You", time: "10:45 AM", isSelf: true },
-          { id: 5, text: "No, you'll need to arrange your own transportation. But there's free parking available near the entrance.", sender: "Organizer", time: "10:50 AM", isSelf: false },
-          { id: 6, text: "Great, thanks for the information!", sender: "You", time: "10:55 AM", isSelf: true },
-          { id: 7, text: "Is there a specific dress code?", sender: "Ahmed", time: "11:00 AM", isSelf: false },
-          { id: 8, text: "Please wear comfortable clothes and closed shoes. We'll provide the event t-shirts on arrival.", sender: "Organizer", time: "11:05 AM", isSelf: false },
-        ];
-        
-        return (
-          <div className="container mx-auto px-4 py-8 pb-24 pt-24">
-            <h1 className="text-2xl font-bold mb-6">Event Chats</h1>
-            
-            <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              {/* Chats Sidebar */}
-              <div className="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <input
-                    type="text"
-                    placeholder="Search chats..."
-                    className="w-full bg-gray-100 dark:bg-gray-700 border-0 rounded-lg py-2 px-3 text-sm"
-                  />
-                </div>
-                
-                <div className="overflow-y-auto h-[calc(100%-56px)]">
-                  {chats.map(chat => (
-                    <div 
-                      key={chat.id} 
-                      className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer border-b border-gray-200 dark:border-gray-700 ${
-                        activeChat === chat.id ? 'bg-gray-100 dark:bg-gray-700' : ''
-                      }`}
-                      onClick={() => setActiveChat(chat.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center">
-                            {chat.name.charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {chat.name}
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                              {chat.lastMessage}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{chat.timestamp}</span>
-                          {chat.unread > 0 && (
-                            <span className="mt-1 px-2 py-1 bg-emerald-600 text-white text-xs rounded-full">
-                              {chat.unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Active Chat Area */}
-              <div className="flex-1 flex flex-col">
-                {/* Chat Header */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center mr-3">
-                    {currentChat.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="font-medium">{currentChat.name}</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">12 participants</p>
-                  </div>
-                </div>
-                
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
-                  <div className="space-y-4">
-                    {chatMessages.map(message => (
-                      <div key={message.id} className={`flex ${message.isSelf ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs md:max-w-md rounded-lg p-3 ${
-                          message.isSelf 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-gray-200 dark:bg-gray-800'
-                        }`}>
-                          {!message.isSelf && (
-                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                              {message.sender}
-                            </p>
-                          )}
-                          <p className="text-sm">{message.text}</p>
-                          <p className={`text-xs mt-1 text-right ${
-                            message.isSelf ? 'text-emerald-200' : 'text-gray-500'
-                          }`}>
-                            {message.time}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Message Input */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex">
-                    <input
-                      type="text"
-                      placeholder="Type a message..."
-                      className="flex-1 bg-gray-100 dark:bg-gray-700 border-0 rounded-l-lg py-2 px-3"
-                    />
-                    <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-r-lg transition">
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      
+
       case 'dashboard':
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
@@ -444,7 +326,7 @@ export default function VolunteerDashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* Recommended Events */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
               <h2 className="text-xl font-bold mb-4">Recommended for You</h2>
@@ -472,14 +354,14 @@ export default function VolunteerDashboard() {
                 ))}
               </div>
             </div>
-            
+
             {/* Calendar View */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Your Calendar</h2>
                 <button className="text-emerald-600 text-sm font-medium">View All</button>
               </div>
-              
+
               {/* Simple calendar visualization */}
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-6">
                 <div className="text-center mb-4">
@@ -499,17 +381,16 @@ export default function VolunteerDashboard() {
                     // Highlight days with events (12 and 18)
                     const isEventDay = [12, 18].includes(i + 1);
                     const isToday = i + 1 === 5; // Assuming today is May 5
-                    
+
                     return (
-                      <div 
-                        key={i} 
-                        className={`py-1 rounded-full text-sm ${
-                          isEventDay 
-                            ? 'bg-emerald-600 text-white' 
-                            : isToday 
-                              ? 'border border-emerald-600 text-emerald-600' 
+                      <div
+                        key={i}
+                        className={`py-1 rounded-full text-sm ${isEventDay
+                            ? 'bg-emerald-600 text-white'
+                            : isToday
+                              ? 'border border-emerald-600 text-emerald-600'
                               : ''
-                        }`}
+                          }`}
                       >
                         {i + 1 <= 31 ? i + 1 : ''}
                       </div>
@@ -517,7 +398,7 @@ export default function VolunteerDashboard() {
                   })}
                 </div>
               </div>
-              
+
               {/* Upcoming events list */}
               <h3 className="font-medium mb-3">Upcoming Events</h3>
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -544,7 +425,7 @@ export default function VolunteerDashboard() {
             </div>
           </div>
         );
-      
+
       case 'rewards':
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
@@ -554,7 +435,7 @@ export default function VolunteerDashboard() {
                 <span className="font-medium">{userStats.points} points available</span>
               </div>
             </div>
-            
+
             {/* Rewards Grid */}
             <h2 className="text-xl font-medium mb-4">Available Rewards</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -568,12 +449,11 @@ export default function VolunteerDashboard() {
                   </div>
                   <div className="p-4">
                     <h3 className="font-bold text-lg mb-3">{reward.title}</h3>
-                    <button 
-                      className={`w-full py-2 rounded-md font-medium transition ${
-                        reward.eligible && userStats.points >= reward.points
+                    <button
+                      className={`w-full py-2 rounded-md font-medium transition ${reward.eligible && userStats.points >= reward.points
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                           : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      }`}
+                        }`}
                     >
                       {reward.eligible && userStats.points >= reward.points ? 'Redeem Now' : 'Not Enough Points'}
                     </button>
@@ -581,18 +461,17 @@ export default function VolunteerDashboard() {
                 </div>
               ))}
             </div>
-            
+
             {/* Badges Section */}
             <h2 className="text-xl font-medium mb-4">Your Badges</h2>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {badges.map(badge => (
                   <div key={badge.id} className="flex flex-col items-center">
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                      badge.earned 
-                        ? 'bg-emerald-100 dark:bg-emerald-900' 
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${badge.earned
+                        ? 'bg-emerald-100 dark:bg-emerald-900'
                         : 'bg-gray-200 dark:bg-gray-700'
-                    }`}>
+                      }`}>
                       {/* Badge icon placeholder */}
                       {badge.earned ? (
                         <Star className={`h-8 w-8 text-emerald-600 dark:text-emerald-400`} />
@@ -600,11 +479,10 @@ export default function VolunteerDashboard() {
                         <Star className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                       )}
                     </div>
-                    <span className={`mt-2 text-sm font-medium ${
-                      badge.earned 
-                        ? 'text-gray-900 dark:text-white' 
+                    <span className={`mt-2 text-sm font-medium ${badge.earned
+                        ? 'text-gray-900 dark:text-white'
                         : 'text-gray-500 dark:text-gray-400'
-                    }`}>
+                      }`}>
                       {badge.name}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -616,7 +494,7 @@ export default function VolunteerDashboard() {
             </div>
           </div>
         );
-      
+
       case 'profile':
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
@@ -651,7 +529,7 @@ export default function VolunteerDashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs for Profile Info */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
               <div className="flex border-b border-gray-200 dark:border-gray-700">
@@ -662,7 +540,7 @@ export default function VolunteerDashboard() {
                   E-WALLET
                 </button>
               </div>
-              
+
               {/* Recent Events List */}
               <div className="p-4">
                 <div className="border-b border-gray-200 dark:border-gray-700 py-4">
@@ -676,7 +554,7 @@ export default function VolunteerDashboard() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="border-b border-gray-200 dark:border-gray-700 py-4">
                   <div className="flex items-start">
                     <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex-shrink-0 flex items-center justify-center mr-4">
@@ -688,7 +566,7 @@ export default function VolunteerDashboard() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="py-4">
                   <div className="flex items-start">
                     <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex-shrink-0 flex items-center justify-center mr-4">
@@ -702,7 +580,7 @@ export default function VolunteerDashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* Settings Options */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -713,7 +591,7 @@ export default function VolunteerDashboard() {
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
-                
+
                 <div className="p-4 flex items-center justify-between cursor-pointer">
                   <div className="flex items-center">
                     <Settings className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
@@ -721,7 +599,7 @@ export default function VolunteerDashboard() {
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
-                
+
                 <div className="p-4 flex items-center justify-between cursor-pointer">
                   <div className="flex items-center">
                     <Users className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
@@ -733,7 +611,7 @@ export default function VolunteerDashboard() {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -742,7 +620,7 @@ export default function VolunteerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {renderContent()}
-      
+
       {/* Bottom Navigation Bar - Fixed at bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 z-50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -752,11 +630,10 @@ export default function VolunteerDashboard() {
             return (
               <button
                 key={item.id}
-                className={`flex flex-col items-center justify-center ${
-                  isActive
+                className={`flex flex-col items-center justify-center ${isActive
                     ? 'text-emerald-600 dark:text-emerald-500'
                     : 'text-gray-500 dark:text-gray-400'
-                }`}
+                  }`}
                 onClick={() => setActiveTab(item.id)}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-emerald-600 dark:text-emerald-500' : ''}`} />
