@@ -10,6 +10,7 @@ import { ArrowLeft, User } from 'lucide-react';
 import { signUpVolunteer } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
+import { supabase } from '@/lib/supabaseClient'; 
 
 export default function VolunteerSignup() {
   const [formData, setFormData] = useState({
@@ -17,21 +18,26 @@ export default function VolunteerSignup() {
     email: '',
     password: '',
     confirmPassword: '',
-    agreeTerms: false
+    agreeTerms: false,
   });
+
+  const [signingOut, setSigningOut] = useState(false);
 
   const router = useRouter();
   const { user, loading } = useUser();
 
   useEffect(() => {
     if (!loading && user) {
-      const role = user.user_metadata?.role;
-      if (role === 'volunteer') router.replace('/volunteer-dashboard');
-      else if (role === 'company') router.replace('/company-dashboard');
+      // If someone is logged in, alert and sign them out
+      setSigningOut(true);
+      alert("You're already signed in. We’ll sign you out so you can create a new volunteer account.");
+      supabase.auth.signOut().then(() => {
+        setSigningOut(false);
+      });
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
 
-  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+  const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -71,6 +77,25 @@ export default function VolunteerSignup() {
       alert('Signup failed.');
     }
   };
+
+  if (signingOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+        <Card className="w-full max-w-md shadow-lg text-center p-6">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-emerald-600">
+              Signing you out...
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 dark:text-gray-400">
+              You were already logged in. We’re signing you out so you can create a new volunteer account.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LucideLeaf, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,23 +18,36 @@ const publicRoutes = [
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const pathname = usePathname();
-  
-  // Determine if we're on a logged-in page
-  const isLoggedIn = pathname === '/volunteer-dashboard';
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check token on mount
+    setIsLoggedIn(!!localStorage.getItem("token"));
+
+    // Listen for login/logout changes in other tabs/windows
+    const handleStorage = () => {
+      setIsLoggedIn(!!localStorage.getItem("token"));
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
 
   return (
     <header
@@ -85,7 +98,7 @@ export default function Navbar() {
                 variant="outline" 
                 size="sm" 
                 className="flex items-center space-x-1"
-                onClick={() => window.location.href = '/'}
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-1" />
                 <span>Logout</span>
@@ -123,7 +136,6 @@ export default function Navbar() {
         <div className="md:hidden absolute top-16 left-0 w-full bg-white dark:bg-gray-900 shadow-lg py-4 px-4 transition-all duration-300 ease-in-out">
           <nav className="flex flex-col space-y-4">
             {!isLoggedIn ? (
-              // Show regular navigation for non-logged in users
               <>
                 {publicRoutes.map((route) => (
                   <Link
@@ -149,15 +161,11 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              // Show logout option for logged in users
               <div className="flex flex-col space-y-2 pt-2">
                 <Button 
                   variant="outline" 
                   className="w-full justify-center flex items-center"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    window.location.href = '/';
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Logout</span>

@@ -19,8 +19,10 @@ export default function LoginPage() {
     try {
       const { data, error } = await login({ email, password });
       if (error) throw new Error(error.message || 'Login failed');
+
       // Optionally store session/token if needed
-      // localStorage.setItem('token', data.session?.access_token);
+      localStorage.setItem('token', data.session?.access_token);
+      
       // Navigate based on type
       if (type === 'volunteer') router.push('/volunteer-dashboard');
       else router.push('/company-dashboard');

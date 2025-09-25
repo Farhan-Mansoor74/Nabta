@@ -15,7 +15,9 @@ import {
   Star,
   Bell,
   Settings,
-  Filter
+  Filter,
+  HeartOffIcon,
+  HeartIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +28,7 @@ import { useRouter } from 'next/navigation';
 
 export default function VolunteerDashboard() {
   const [activeTab, setActiveTab] = useState('explore');
+  const [showFavorites, setShowFavorites] = useState(false);
 
   // Filter states - moved from list.tsx to page.tsx
   const [searchInput, setSearchInput] = useState('');
@@ -48,9 +51,6 @@ export default function VolunteerDashboard() {
   const handleLearnMore = (eventId: number | string) => {
     router.push(`/opportunities/${eventId}`);
   };
-
-  // State for chats
-  const [activeChat, setActiveChat] = useState(0); // Store ID of active chat
 
   // Sample data for exclusive events
   const exclusiveEvents = [
@@ -80,31 +80,21 @@ export default function VolunteerDashboard() {
     }
   ];
 
-  // Sample chats data
-  const chats = [
-    {
-      id: 1,
-      name: 'WWF Beach Cleanup Team',
-      lastMessage: 'Reporting time is 7:30 AM at Jumeirah Beach entrance',
-      timestamp: '1h ago',
-      unread: 3,
-      image: '/images/chats/wwf.jpg'
-    },
+  // Sample favorited events 
+  const favoritedEvents = [
     {
       id: 2,
-      name: 'Dubai Sustainability Expo',
-      lastMessage: 'Your payment of AED 300 has been processed. Thank you!',
-      timestamp: '3h ago',
-      unread: 0,
-      image: '/images/chats/expo.jpg'
+      title: 'Solar Panel Installation',
+      date: 'May 22, 2025',
+      points: 300,
+      location: 'Sustainable City'
     },
     {
       id: 3,
-      name: 'Mangrove Planting Initiative',
-      lastMessage: "Please complete the feedback form for Sunday's event",
-      timestamp: 'Yesterday',
-      unread: 1,
-      image: '/images/chats/mangrove.jpg'
+      title: 'Urban Farming Workshop',
+      date: 'May 28, 2025',
+      points: 200,
+      location: 'Al Barsha Park'
     }
   ];
 
@@ -386,10 +376,10 @@ export default function VolunteerDashboard() {
                       <div
                         key={i}
                         className={`py-1 rounded-full text-sm ${isEventDay
-                            ? 'bg-emerald-600 text-white'
-                            : isToday
-                              ? 'border border-emerald-600 text-emerald-600'
-                              : ''
+                          ? 'bg-emerald-600 text-white'
+                          : isToday
+                            ? 'border border-emerald-600 text-emerald-600'
+                            : ''
                           }`}
                       >
                         {i + 1 <= 31 ? i + 1 : ''}
@@ -451,8 +441,8 @@ export default function VolunteerDashboard() {
                     <h3 className="font-bold text-lg mb-3">{reward.title}</h3>
                     <button
                       className={`w-full py-2 rounded-md font-medium transition ${reward.eligible && userStats.points >= reward.points
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                         }`}
                     >
                       {reward.eligible && userStats.points >= reward.points ? 'Redeem Now' : 'Not Enough Points'}
@@ -469,8 +459,8 @@ export default function VolunteerDashboard() {
                 {badges.map(badge => (
                   <div key={badge.id} className="flex flex-col items-center">
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center ${badge.earned
-                        ? 'bg-emerald-100 dark:bg-emerald-900'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-emerald-100 dark:bg-emerald-900'
+                      : 'bg-gray-200 dark:bg-gray-700'
                       }`}>
                       {/* Badge icon placeholder */}
                       {badge.earned ? (
@@ -480,8 +470,8 @@ export default function VolunteerDashboard() {
                       )}
                     </div>
                     <span className={`mt-2 text-sm font-medium ${badge.earned
-                        ? 'text-gray-900 dark:text-white'
-                        : 'text-gray-500 dark:text-gray-400'
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400'
                       }`}>
                       {badge.name}
                     </span>
@@ -592,6 +582,18 @@ export default function VolunteerDashboard() {
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
 
+                {/* Favorites row - add onClick */}
+                <div
+                  className="p-4 flex items-center justify-between cursor-pointer"
+                  onClick={() => setShowFavorites(true)}
+                >
+                  <div className="flex items-center">
+                    <HeartIcon className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    <span>Favorites</span>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </div>
+
                 <div className="p-4 flex items-center justify-between cursor-pointer">
                   <div className="flex items-center">
                     <Settings className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
@@ -609,6 +611,54 @@ export default function VolunteerDashboard() {
                 </div>
               </div>
             </div>
+
+
+            {/* Show favorites if toggled */}
+            {showFavorites && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Your Favorites</h2>
+                  <button
+                    className="text-emerald-600 text-sm font-medium"
+                    onClick={() => setShowFavorites(false)}
+                  >
+                    Back
+                  </button>
+                </div>
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {favoritedEvents.length === 0 ? (
+                    <div className="text-gray-500 dark:text-gray-400 py-8 text-center">
+                      You haven't favorited any events yet.
+                    </div>
+                  ) : (
+                    favoritedEvents.map(event => (
+                      <div key={event.id} className="py-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">{event.title}</h3>
+                          <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            <span>{event.date}</span>
+                            <MapPin className="h-4 w-4 ml-3 mr-1" />
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs font-medium px-2 py-1 rounded mr-3">
+                            {event.points} pts
+                          </span>
+                          <button
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1 rounded transition"
+                            onClick={() => handleLearnMore(event.id)}
+                          >
+                            Learn More
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -631,8 +681,8 @@ export default function VolunteerDashboard() {
               <button
                 key={item.id}
                 className={`flex flex-col items-center justify-center ${isActive
-                    ? 'text-emerald-600 dark:text-emerald-500'
-                    : 'text-gray-500 dark:text-gray-400'
+                  ? 'text-emerald-600 dark:text-emerald-500'
+                  : 'text-gray-500 dark:text-gray-400'
                   }`}
                 onClick={() => setActiveTab(item.id)}
               >

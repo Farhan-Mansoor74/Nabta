@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import EventDetailsClient from "@/components/opportunities/EventDetailsClient";
+import VolunteerTabs from "@/components/layout/VolunteerTabs";
 
 export async function generateStaticParams() {
   const { data, error } = await supabase.from("events").select("id");
@@ -10,5 +11,10 @@ export async function generateStaticParams() {
 }
 
 export default function OpportunityDetailsPage() {
-  return <EventDetailsClient />;
+  return (
+    <>
+      <EventDetailsClient />
+      <VolunteerTabs />
+    </>
+  );
 }
