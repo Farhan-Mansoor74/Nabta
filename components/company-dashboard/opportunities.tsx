@@ -20,8 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import EventEditorDialog, { Opportunity } from './EventEditorDialog';
+import ParticipantsDialog, { Participant } from './ParticipantsDialog';
 
-const opportunities = [
+const opportunities: Opportunity[] = [
   {
     id: 1,
     title: "Corporate Beach Cleanup",
@@ -68,10 +70,29 @@ const opportunities = [
   }
 ];
 
+const mockParticipants: Record<number, Participant[]> = {
+  1: [
+    { id: 1, misis: 'MIS-1001', name: 'Alex Morgan', phone: '+1 555-123-4567', email: 'alex.morgan@example.com', status: 'not_approved' },
+    { id: 2, misis: 'MIS-1002', name: 'Taylor Reed', phone: '+1 555-222-7890', email: 'taylor.reed@example.com', status: 'not_approved' },
+    { id: 3, misis: 'MIS-1003', name: 'Jordan Lee', phone: '+1 555-987-6543', email: 'jordan.lee@example.com', status: 'approved' },
+  ],
+  2: [
+    { id: 4, misis: 'MIS-2001', name: 'Sam Patel', phone: '+1 555-333-1200', email: 'sam.patel@example.com', status: 'not_approved' },
+  ],
+  3: [],
+  4: [
+    { id: 5, misis: 'MIS-4001', name: 'Riley Chen', phone: '+1 555-444-8888', email: 'riley.chen@example.com', status: 'approved' },
+  ]
+};
+
 export default function CompanyOpportunities() {
   const [activeTab, setActiveTab] = useState("active");
+  const [items, setItems] = useState<Opportunity[]>(opportunities);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [selected, setSelected] = useState<Opportunity | null>(null);
 
-  const filteredOpportunities = opportunities.filter(opp => {
+  const filteredOpportunities = items.filter(opp => {
     if (activeTab === "all") return true;
     return opp.status === activeTab;
   });
@@ -87,6 +108,20 @@ export default function CompanyOpportunities() {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
     }
+  };
+
+  const handleEdit = (opp: Opportunity) => {
+    setSelected(opp);
+    setEditorOpen(true);
+  };
+
+  const handleViewParticipants = (opp: Opportunity) => {
+    setSelected(opp);
+    setParticipantsOpen(true);
+  };
+
+  const handleSave = (updated: Opportunity) => {
+    setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
   };
 
   return (
@@ -149,11 +184,11 @@ export default function CompanyOpportunities() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(opportunity)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewParticipants(opportunity)}>
                           <Users className="h-4 w-4 mr-2" />
                           View Participants
                         </DropdownMenuItem>
@@ -190,6 +225,20 @@ export default function CompanyOpportunities() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <EventEditorDialog 
+        open={editorOpen} 
+        onOpenChange={setEditorOpen}
+        opportunity={selected}
+        onSave={handleSave}
+      />
+
+      <ParticipantsDialog 
+        open={participantsOpen}
+        onOpenChange={setParticipantsOpen}
+        eventTitle={selected?.title ?? ''}
+        participants={selected ? (mockParticipants[selected.id] ?? []) : []}
+      />
     </Card>
   );
 }

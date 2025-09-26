@@ -1,7 +1,13 @@
+"use client";
+
 import { Button } from '@/components/ui/button';
 import { Plus, Settings } from 'lucide-react';
 
-export default function CompanyDashboardHeader() {
+interface Props {
+	onCreate?: () => void;
+}
+
+export default function CompanyDashboardHeader({ onCreate }: Props) {
   return (
     <div className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
       <div className="container mx-auto px-4 py-6">
@@ -20,7 +26,7 @@ export default function CompanyDashboardHeader() {
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700" onClick={onCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Create Opportunity
             </Button>
