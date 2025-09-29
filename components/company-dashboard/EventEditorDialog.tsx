@@ -9,31 +9,28 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/lib/supabaseClient';
 
 export type Opportunity = {
-	id: number;
+	id?: string;
 	title: string;
 	category: string;
-	date: string;
 	location: string;
-	participants: number;
-	capacity: number;
-	status: string;
-	views: number;
-	description?: string;
-	// Extended event schema fields (optional for compatibility)
-	organization_id?: string;
+	latitude?: string;
+	longitude?: string;
+	image_url?: string;
 	event_date?: string; // ISO date
 	start_time?: string; // HH:mm
 	end_time?: string; // HH:mm
-	image_url?: string;
+	capacity: number;
 	max_participants?: number;
 	current_participants?: number;
 	points?: number;
-	featured?: boolean;
+	status: string;
 	icon_name?: string;
-	latitude?: string;
-	longitude?: string;
+	featured?: boolean;
+	description?: string;
+	organization_id?: string;
 };
 
 interface EventEditorDialogProps {
@@ -41,6 +38,53 @@ interface EventEditorDialogProps {
 	onOpenChange: (open: boolean) => void;
 	opportunity: Opportunity | null;
 	onSave: (updated: Opportunity) => void;
+}
+
+async function saveEvent(eventData: Opportunity) {
+	const {
+		data: { user },
+		error: userError,
+	} = await supabase.auth.getUser();
+
+	if (userError || !user) {
+		console.error("No user logged in or error fetching user:", userError);
+		return null;
+	}
+	const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+	const cleaned = {
+		title: eventData.title,
+		category: eventData.category,
+		location: eventData.location,
+		latitude: eventData.latitude ? Number(eventData.latitude) : null,
+		longitude: eventData.longitude ? Number(eventData.longitude) : null,
+		image_url: eventData.image_url || null,
+		event_date: eventData.event_date && eventData.event_date !== "" ? eventData.event_date : today,
+		start_time: eventData.start_time && eventData.start_time !== "" ? eventData.start_time : null,
+		end_time: eventData.end_time && eventData.end_time !== "" ? eventData.end_time : null,
+		capacity: eventData.capacity ?? null,
+		max_participants: eventData.max_participants ?? null,
+		current_participants: eventData.current_participants ?? 0,
+		points: eventData.points ?? 0,
+		status: eventData.status || "draft",
+		icon_name: eventData.icon_name || null,
+		featured: eventData.featured ?? false,
+		description: eventData.description || null,
+		organization_id: user.id|| null,
+	};
+
+	const { data, error } = await supabase
+    .from("events")
+    .insert([cleaned])
+    .select()
+    .single();
+	
+	if (error) {
+		console.error("Error saving event:", error);
+		return null;
+	}
+
+	return data;
 }
 
 export default function EventEditorDialog({ open, onOpenChange, opportunity, onSave }: EventEditorDialogProps) {
@@ -56,16 +100,19 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 		setForm({ ...form, [key]: value } as Opportunity);
 	};
 
-	const handleSubmit = () => {
-		onSave(form);
-		onOpenChange(false);
+	const handleSubmit = async () => {
+		const saved = await saveEvent(form);
+		if (saved) {
+			onSave(saved);
+			onOpenChange(false);
+		}
 	};
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-5xl">
 				<DialogHeader>
-					<DialogTitle className="text-gray-900 dark:text-white">{form.id ? 'Edit Opportunity' : 'Create Opportunity'}</DialogTitle>
+					<DialogTitle className="text-gray-900 dark:text-white">{form.title ? 'Edit Opportunity' : 'Create Opportunity'}</DialogTitle>
 					<DialogDescription className="text-gray-600 dark:text-gray-400">
 						Fill out the event details. Frontend-only; does not persist.
 					</DialogDescription>
