@@ -125,9 +125,10 @@ export default function CompanyOpportunities() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Opportunities</CardTitle>
+    <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Your Opportunities</CardTitle>
+        <p className="text-gray-600 dark:text-gray-400">Manage and track your volunteering events</p>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -143,7 +144,7 @@ export default function CompanyOpportunities() {
               {filteredOpportunities.map((opportunity) => (
                 <div 
                   key={opportunity.id}
-                  className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 hover:border-emerald-300 dark:hover:border-emerald-600"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -201,14 +202,16 @@ export default function CompanyOpportunities() {
                   </div>
                   
                   {/* Progress bar */}
-                  <div className="mt-4">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <span>Registration Progress</span>
-                      <span>{Math.round((opportunity.participants / opportunity.capacity) * 100)}%</span>
+                  <div className="mt-6">
+                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      <span className="font-medium">Registration Progress</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {Math.round((opportunity.participants / opportunity.capacity) * 100)}%
+                      </span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 shadow-inner">
                       <div 
-                        className="bg-emerald-600 dark:bg-emerald-500 h-2 rounded-full transition-all"
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-500 dark:to-emerald-600 h-3 rounded-full transition-all duration-500 shadow-sm"
                         style={{ width: `${(opportunity.participants / opportunity.capacity) * 100}%` }}
                       ></div>
                     </div>

@@ -43,10 +43,10 @@ export default function CompanyDashboardPage() {
   };
 
   return (
-    <div className="pt-16 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       <CompanyDashboardHeader onCreate={handleOpenCreate} />
-      <div className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
+      <div className="container mx-auto px-4 py-12">
+        <div className="space-y-12">
           <CompanyStats />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">

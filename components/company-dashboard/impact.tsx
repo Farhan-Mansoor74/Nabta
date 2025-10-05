@@ -53,9 +53,10 @@ export default function CompanyImpact() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Impact Analytics</CardTitle>
+    <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Impact Analytics</CardTitle>
+        <p className="text-gray-600 dark:text-gray-400">Track your environmental impact and volunteer engagement</p>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="overview" className="w-full">
@@ -66,19 +67,19 @@ export default function CompanyImpact() {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {impactMetrics.map((metric) => (
-                <div key={metric.metric} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div key={metric.metric} className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-600">
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     {metric.value}
-                    <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">
+                    <span className="text-lg font-normal text-gray-600 dark:text-gray-400 ml-1">
                       {metric.unit}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {metric.metric}
                   </div>
-                  <div className="text-xs text-green-600 dark:text-green-400">
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full inline-block">
                     {metric.change} from last quarter
                   </div>
                 </div>

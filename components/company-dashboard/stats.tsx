@@ -49,20 +49,20 @@ export default function CompanyStats() {
         const isIncrease = stat.changeType === "increase";
         
         return (
-          <Card key={stat.title}>
+          <Card key={stat.title} className="relative overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className={cn("p-2 rounded-lg", stat.bgColor)}>
+              <div className="flex items-center justify-between mb-4">
+                <div className={cn("p-3 rounded-xl shadow-sm", stat.bgColor)}>
                   <Icon className={cn("h-6 w-6", stat.color)} />
                 </div>
-                <div className="flex items-center text-sm">
+                <div className="flex items-center text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded-full shadow-sm">
                   {isIncrease ? (
                     <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400 mr-1" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400 mr-1" />
                   )}
                   <span className={cn(
-                    "font-medium",
+                    "font-medium text-xs",
                     isIncrease ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                   )}>
                     {stat.change}
@@ -70,14 +70,17 @@ export default function CompanyStats() {
                 </div>
               </div>
               
-              <div className="mt-4">
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="space-y-1">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">
                   {stat.value}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   {stat.title}
                 </div>
               </div>
+              
+              {/* Subtle gradient overlay */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
             </CardContent>
           </Card>
         );

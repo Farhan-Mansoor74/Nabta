@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, Users, Upload, Image as ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabaseClient';
@@ -89,15 +89,32 @@ async function saveEvent(eventData: Opportunity) {
 
 export default function EventEditorDialog({ open, onOpenChange, opportunity, onSave }: EventEditorDialogProps) {
 	const [form, setForm] = useState<Opportunity | null>(opportunity);
+	const [imagePreview, setImagePreview] = useState<string | null>(null);
 
 	useEffect(() => {
 		setForm(opportunity);
+		if (opportunity?.image_url) {
+			setImagePreview(opportunity.image_url);
+		}
 	}, [opportunity]);
 
 	if (!form) return null;
 
 	const handleChange = (key: keyof Opportunity, value: string | number | boolean) => {
 		setForm({ ...form, [key]: value } as Opportunity);
+	};
+
+	const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const result = e.target?.result as string;
+				setImagePreview(result);
+				setForm({ ...form, image_url: result } as Opportunity);
+			};
+			reader.readAsDataURL(file);
+		}
 	};
 
 	const handleSubmit = async () => {
@@ -110,7 +127,7 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-5xl">
+			<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
 				<DialogHeader>
 					<DialogTitle className="text-gray-900 dark:text-white">{form.title ? 'Edit Opportunity' : 'Create Opportunity'}</DialogTitle>
 					<DialogDescription className="text-gray-600 dark:text-gray-400">
@@ -136,8 +153,38 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 						</div>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="image_url">Image URL</Label>
-						<Input id="image_url" value={form.image_url ?? ''} onChange={(e) => handleChange('image_url', e.target.value)} />
+						<Label htmlFor="image_upload">Event Image</Label>
+						<div className="space-y-3">
+							<div className="flex items-center justify-center w-full">
+								<label htmlFor="image_upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
+									<div className="flex flex-col items-center justify-center pt-5 pb-6">
+										<Upload className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
+										<p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+											<span className="font-semibold">Click to upload</span> or drag and drop
+										</p>
+										<p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG or GIF (MAX. 10MB)</p>
+									</div>
+									<input id="image_upload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+								</label>
+							</div>
+							{imagePreview && (
+								<div className="relative">
+									<img src={imagePreview} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+									<Button
+										type="button"
+										variant="destructive"
+										size="sm"
+										className="absolute top-2 right-2"
+										onClick={() => {
+											setImagePreview(null);
+											setForm({ ...form, image_url: '' } as Opportunity);
+										}}
+									>
+										Remove
+									</Button>
+								</div>
+							)}
+						</div>
 					</div>
 
 					<div className="space-y-2">
