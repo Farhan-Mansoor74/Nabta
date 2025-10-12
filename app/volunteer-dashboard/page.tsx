@@ -416,12 +416,36 @@ export default function VolunteerDashboard() {
       setSelectedEvent(null);
       setSignupForm({ fullName: "", email: "", phone: "", motivation: "" });
       
-      // Refresh recommended events
-      const refreshRes = await fetch(`${API_BASE}/api/recommended-events?userId=${currentUserId}&limit=3`);
-      if (refreshRes.ok) {
-        const refreshData = await refreshRes.json();
-        setRecommendedEvents(refreshData);
+      // Refresh Recommended Events
+      const refreshRecommended = await fetch(`${API_BASE}/api/recommended-events?userId=${currentUserId}&limit=3`);
+      if (refreshRecommended.ok) {
+        const data = await refreshRecommended.json();
+        setRecommendedEvents(data);
       }
+
+      // Refresh User Stats
+      const refreshStats = await fetch(`${API_BASE}/api/user-stats?userId=${currentUserId}`);
+      if (refreshStats.ok) {
+        const data = await refreshStats.json();
+        setUserStats(data);
+      }
+
+      // Refresh Upcoming Events
+      const refreshUpcoming = await fetch(`${API_BASE}/api/upcoming-events?userId=${currentUserId}`);
+      if (refreshUpcoming.ok) {
+        const data = await refreshUpcoming.json();
+        setUpcomingEvents(data);
+      }
+
+      // Refresh Calendar Events
+      const refreshCalendar = await fetch(
+        `${API_BASE}/api/calendar-events?start=${encodeURIComponent(fetchRange.startISO)}&end=${encodeURIComponent(fetchRange.endISO)}`
+      );
+      if (refreshCalendar.ok) {
+        const data = await refreshCalendar.json();
+        setCalendarEvents(data);
+      }
+
     } catch (error) {
       console.error('Error signing up:', error);
       alert('Failed to sign up for event');
