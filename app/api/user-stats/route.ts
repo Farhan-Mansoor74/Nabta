@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from('complete_user_profiles')
+      .from('volunteers')
       .select('*')
       .eq('id', userId)
       .single();
