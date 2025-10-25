@@ -28,6 +28,8 @@ import OpportunitiesList from "@/components/opportunities/list";
 import OpportunitiesFilters from "@/components/opportunities/filters";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import AuthGuard from "@/components/AuthGuard";
+import PendingInvitationsBanner from "@/components/PendingInvitationsBanner";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -196,7 +198,7 @@ function CalendarView({
           })}
         </div>
       </div>
-    </div>
+      </div>
   );
 }
 
@@ -205,6 +207,8 @@ export default function VolunteerDashboard() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
+  const [eventDetailsLoading, setEventDetailsLoading] = useState(false);
   const [signupForm, setSignupForm] = useState({
     fullName: "",
     email: "",
@@ -222,24 +226,29 @@ export default function VolunteerDashboard() {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error) throw error;
-        
+
         if (user) {
           setCurrentUserId(user.id);
           console.log('Logged in user ID:', user.id);
+
+          // Pre-fill signup form with user data
+          const username = user.user_metadata?.username || user.email?.split('@')[0] || "";
+          setSignupForm({
+            fullName: username,
+            email: user.email || "",
+            phone: user.user_metadata?.phone || "",
+            motivation: ""
+          });
         } else {
           console.warn('No authenticated user found');
-          // For testing, you can set a hardcoded ID here:
-          // setCurrentUserId("your-test-user-id");
         }
       } catch (error) {
         console.error('Error getting user:', error);
-        // For testing, you can set a hardcoded ID here:
-        // setCurrentUserId("your-test-user-id");
       } finally {
         setAuthLoading(false);
       }
     };
-    
+
     getUser();
   }, []);
 
@@ -433,8 +442,50 @@ export default function VolunteerDashboard() {
     setShowSignupModal(true);
   };
 
-  const handleLearnMore = (eventId: number | string) => {
+  const handleLearnMore = async (eventId: number | string) => {
     console.log(`View details for event ID: ${eventId}`);
+
+    // Fetch event details
+    setEventDetailsLoading(true);
+    setShowEventDetailsModal(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          id,
+          title,
+          location,
+          event_date,
+          start_time,
+          end_time,
+          category,
+          image_url,
+          max_participants,
+          current_participants,
+          points,
+          description,
+          companies (
+            company_name
+          )
+        `)
+        .eq('id', eventId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching event details:', error);
+        alert('Failed to load event details');
+        setShowEventDetailsModal(false);
+      } else {
+        setSelectedEvent(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to load event details');
+      setShowEventDetailsModal(false);
+    } finally {
+      setEventDetailsLoading(false);
+    }
   };
 
   const navItems = [
@@ -607,6 +658,7 @@ export default function VolunteerDashboard() {
       case "dashboard":
         return (
           <div className="container mx-auto px-4 py-8 pb-24 pt-24">
+            <PendingInvitationsBanner />
             <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-lg text-white p-6 mb-8">
               <h1 className="text-2xl font-bold mb-4">
                 Welcome back, {loadingStats ? "..." : userStats.name}!
@@ -1037,8 +1089,9 @@ export default function VolunteerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {renderContent()}
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        {renderContent()}
 
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 z-50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -1062,6 +1115,151 @@ export default function VolunteerDashboard() {
           })}
         </div>
       </div>
+
+      {/* Event Details Modal */}
+      {showEventDetailsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-6 rounded-t-xl">
+              <div className="flex justify-between items-start text-white">
+                <div>
+                  <h2 className="text-xl font-bold mb-1">Event Details</h2>
+                  <p className="text-emerald-100 text-sm">View event information</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEventDetailsModal(false);
+                    setSelectedEvent(null);
+                  }}
+                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {eventDetailsLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading event details...</p>
+                </div>
+              ) : selectedEvent ? (
+                <>
+                  {selectedEvent.image_url && (
+                    <div className="mb-6 rounded-lg overflow-hidden">
+                      <img
+                        src={selectedEvent.image_url}
+                        alt={selectedEvent.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    {selectedEvent.title}
+                  </h3>
+
+                  {selectedEvent.companies && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Organized by {Array.isArray(selectedEvent.companies)
+                        ? selectedEvent.companies[0]?.company_name
+                        : selectedEvent.companies?.company_name || 'Unknown Organization'}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="flex items-center text-gray-700 dark:text-gray-300">
+                      <CalendarIcon className="h-5 w-5 mr-2 text-emerald-600" />
+                      <span>
+                        {selectedEvent.event_date
+                          ? new Date(selectedEvent.event_date).toLocaleDateString(undefined, {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          : 'Date TBA'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-gray-700 dark:text-gray-300">
+                      <Clock className="h-5 w-5 mr-2 text-emerald-600" />
+                      <span>
+                        {selectedEvent.start_time && selectedEvent.end_time
+                          ? `${selectedEvent.start_time.slice(0, 5)} - ${selectedEvent.end_time.slice(0, 5)}`
+                          : 'Time TBA'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-gray-700 dark:text-gray-300">
+                      <MapPin className="h-5 w-5 mr-2 text-emerald-600" />
+                      <span>{selectedEvent.location}</span>
+                    </div>
+
+                    <div className="flex items-center text-gray-700 dark:text-gray-300">
+                      <Users className="h-5 w-5 mr-2 text-emerald-600" />
+                      <span>
+                        {selectedEvent.current_participants || 0}/{selectedEvent.max_participants} participants
+                      </span>
+                    </div>
+
+                    {selectedEvent.category && (
+                      <div className="flex items-center text-gray-700 dark:text-gray-300">
+                        <Badge className="bg-emerald-600">
+                          {selectedEvent.category}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {selectedEvent.points && (
+                      <div className="flex items-center text-gray-700 dark:text-gray-300">
+                        <Star className="h-5 w-5 mr-2 text-amber-500" />
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          {selectedEvent.points} points
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedEvent.description && (
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Description</h4>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {selectedEvent.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => {
+                        setShowEventDetailsModal(false);
+                        setSelectedEvent(null);
+                      }}
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push(`/opportunities/${selectedEvent.id}`);
+                      }}
+                      className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                      View Full Details
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No event details available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showSignupModal && selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
@@ -1194,6 +1392,7 @@ export default function VolunteerDashboard() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

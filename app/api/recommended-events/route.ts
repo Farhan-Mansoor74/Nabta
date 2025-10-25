@@ -1,8 +1,10 @@
 // app/api/recommended-events/route.ts
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
+  const supabase = await createClient();
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -12,22 +14,40 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Get events user hasn't registered for
-    const { data: registeredEvents } = await supabase
-      .from('event_registrations')
-      .select('event_id')
-      .eq('volunteer_id', userId);
+    // Get volunteer profile
+    const { data: volunteer } = await supabase
+      .from('volunteers')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    const registeredIds = registeredEvents?.map(r => r.event_id) || [];
+    let registeredIds: string[] = [];
 
-    const { data, error } = await supabase
+    if (volunteer) {
+      // Get events user has already registered for
+      const { data: registeredEvents } = await supabase
+        .from('event_registrations')
+        .select('event_id')
+        .eq('volunteer_id', volunteer.id);
+
+      registeredIds = registeredEvents?.map(r => r.event_id) || [];
+    }
+
+    // Build query for events
+    let query = supabase
       .from('events')
       .select('*')
       .gte('event_date', new Date().toISOString())
       .eq('status', 'active')
-      .not('id', 'in', `(${registeredIds.join(',')})`)
       .order('event_date', { ascending: true })
       .limit(limit);
+
+    // Only exclude registered events if user has registrations
+    if (registeredIds.length > 0) {
+      query = query.not('id', 'in', `(${registeredIds.join(',')})`);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

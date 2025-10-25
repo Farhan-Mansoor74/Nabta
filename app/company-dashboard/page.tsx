@@ -6,16 +6,17 @@ import CompanyOpportunities from '@/components/company-dashboard/opportunities';
 import CompanyTeam from '@/components/company-dashboard/team';
 import CompanyImpact from '@/components/company-dashboard/impact';
 import EventEditorDialog, { Opportunity } from '@/components/company-dashboard/EventEditorDialog';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function CompanyDashboardPage() {
+  console.log('🏢 Company Dashboard Page Loaded!');
   const [createOpen, setCreateOpen] = useState(false);
   const [draft, setDraft] = useState<Opportunity | null>({
-    id: 0,
+    id: undefined,
     title: '',
     category: '',
-    date: '',
     location: '',
-    participants: 0,
+
     capacity: 0,
     status: 'draft',
     views: 0,
@@ -43,24 +44,26 @@ export default function CompanyDashboardPage() {
   };
 
   return (
-    <div className="pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-      <CompanyDashboardHeader onCreate={handleOpenCreate} />
-      <div className="container mx-auto px-4 py-12">
-        <div className="space-y-12">
-          <CompanyStats />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <CompanyOpportunities />
+    <AuthGuard>
+      <div className="pt-16 min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+        <CompanyDashboardHeader onCreate={handleOpenCreate} />
+        <div className="container mx-auto px-4 py-12">
+          <div className="space-y-12">
+            <CompanyStats />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <CompanyOpportunities />
+              </div>
+              <div>
+                <CompanyTeam />
+              </div>
             </div>
-            <div>
-              <CompanyTeam />
-            </div>
+            <CompanyImpact />
           </div>
-          <CompanyImpact />
         </div>
-      </div>
 
-      <EventEditorDialog open={createOpen} onOpenChange={setCreateOpen} opportunity={draft} onSave={handleSaveDraft} />
-    </div>
+        <EventEditorDialog open={createOpen} onOpenChange={setCreateOpen} opportunity={draft} onSave={handleSaveDraft} />
+      </div>
+    </AuthGuard>
   );
 }

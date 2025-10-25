@@ -8,32 +8,102 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Building2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { login } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import InvitationsDialog from '@/components/InvitationsDialog';
+import { ApiClient } from '@/lib/apiClient';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showInvitations, setShowInvitations] = useState(false);
+  const supabase = createClient();
 
   const handleLogin = async (type: string) => {
+    setLoading(true);
     try {
-      const { data, error } = await login({ email, password });
-      if (error) throw new Error(error.message || 'Login failed');
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      // Optionally store session/token if needed
-      localStorage.setItem('token', data.session?.access_token);
-      
-      // Navigate based on type
-      if (type === 'volunteer') router.push('/volunteer-dashboard');
-      else router.push('/company-dashboard');
+      if (error) {
+        throw new Error(error.message || 'Login failed');
+      }
+
+      // Check user's role and redirect accordingly
+      const userId = data.user?.id;
+
+      if (!userId) {
+        throw new Error('No user ID returned');
+      }
+
+      // Check for pending invitations first (check both user_id and email)
+      const { data: pendingInvitations } = await supabase
+        .from('company_team_members')
+        .select(`
+          id,
+          company_id,
+          role,
+          status,
+          invited_at,
+          invited_email,
+          companies (
+            id,
+            company_name,
+            email,
+            industry
+          )
+        `)
+        .or(`user_id.eq.${userId},invited_email.eq.${email}`)
+        .eq('status', 'pending');
+
+      if (pendingInvitations && pendingInvitations.length > 0) {
+        // Show invitations dialog
+        console.log('Found pending invitations:', pendingInvitations);
+        setLoading(false);
+        setShowInvitations(true);
+        return;
+      }
+
+      // Check if user is part of a company (accepted status)
+      const { data: teamMemberData } = await supabase
+        .from('company_team_members')
+        .select('company_id, role, status')
+        .eq('user_id', userId)
+        .eq('status', 'accepted')
+        .maybeSingle();
+
+      if (teamMemberData) {
+        // User is part of a company → redirect to company dashboard
+        console.log('Redirecting to company dashboard');
+        router.push('/company-dashboard');
+        return;
+      }
+
+      // If volunteer type was selected and no company association
+      if (type === 'volunteer') {
+        console.log('Redirecting to volunteer dashboard');
+        router.push('/volunteer-dashboard');
+        return;
+      }
+
+      // Default: redirect to home
+      console.log('Redirecting to home');
+      router.push('/');
+
     } catch (err: any) {
+      console.error('Login error:', err);
       alert(err.message || 'Login error');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <>
+      <InvitationsDialog open={showInvitations} onOpenChange={setShowInvitations} />
+
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+        <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold text-emerald-600">Welcome Back</CardTitle>
           <CardDescription>
@@ -63,6 +133,7 @@ export default function LoginPage() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -77,13 +148,15 @@ export default function LoginPage() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                   onClick={() => handleLogin('volunteer')}
+                  disabled={loading}
                 >
-                  Login
+                  {loading ? 'Logging in...' : 'Login'}
                 </Button>
               </div>
             </TabsContent>
@@ -98,6 +171,7 @@ export default function LoginPage() {
                     placeholder="you@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -112,13 +186,15 @@ export default function LoginPage() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                   onClick={() => handleLogin('company')}
+                  disabled={loading}
                 >
-                  Login
+                  {loading ? 'Logging in...' : 'Login'}
                 </Button>
               </div>
             </TabsContent>
@@ -144,5 +220,6 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+    </>
   );
 }

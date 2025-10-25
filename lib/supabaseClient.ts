@@ -1,10 +1,6 @@
-// supabaseClient.ts
-import { createClient } from '@supabase/supabase-js';
+// lib/supabaseClient.ts
+// Updated to use @supabase/ssr for better Next.js compatibility
+import { createClient } from './supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
-
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Anon Key:', supabaseAnonKey ? 'Loaded' : 'Missing');
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Export a singleton instance for client-side use
+export const supabase = createClient();

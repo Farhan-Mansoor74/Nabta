@@ -9,22 +9,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  Award, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  Award,
   CheckCircle,
   Mail,
   Phone,
   Share2,
   Heart,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+
+interface EventDetails {
+  required_skills?: string[];
+  preferred_skills?: string[];
+  materials_provided?: string;
+  bring_your_own?: string[];
+  accessibility_info?: string;
+  parking_info?: string;
+  public_transport_info?: string;
+  expected_participants?: number;
+  community_impact_level?: string;
+  impact_metrics?: Record<string, any>;
+}
 
 interface Event {
   id: string;
@@ -50,6 +64,7 @@ interface Event {
   } | {
     company_name: string;
   }[];
+  event_details?: EventDetails | EventDetails[];
 }
 
 export default function EventDetailsClient() {
@@ -59,6 +74,45 @@ export default function EventDetailsClient() {
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  const [signupForm, setSignupForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    motivation: ""
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  // Get current user
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+
+        if (user) {
+          setCurrentUserId(user.id);
+          setUserEmail(user.email || "");
+          setUserName(user.user_metadata?.username || user.email?.split('@')[0] || "");
+
+          // Pre-fill form
+          setSignupForm({
+            fullName: user.user_metadata?.username || "",
+            email: user.email || "",
+            phone: user.user_metadata?.phone || "",
+            motivation: ""
+          });
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+      }
+    };
+
+    getUser();
+  }, []);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -69,7 +123,7 @@ export default function EventDetailsClient() {
           `
             id,
             title,
-            organization_id,
+            company_id,
             location,
             event_date,
             start_time,
@@ -81,17 +135,30 @@ export default function EventDetailsClient() {
             points,
             featured,
             description,
-            icon_name,
             status,
             latitude,
             longitude,
-            companies!organization_id (
+            companies (
               company_name
+            ),
+            event_details (
+              required_skills,
+              preferred_skills,
+              materials_provided,
+              bring_your_own,
+              accessibility_info,
+              parking_info,
+              public_transport_info,
+              expected_participants,
+              community_impact_level,
+              impact_metrics
             )
           `
         )
         .eq("id", id)
         .single();
+
+      console.log('Event fetch result:', { data, error });
 
       if (error) {
         setEvent(null);
@@ -103,9 +170,100 @@ export default function EventDetailsClient() {
     if (id) fetchEvent();
   }, [id]);
 
+  // Check if user is already registered
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (!currentUserId || !id) return;
+
+      try {
+        // Get volunteer profile
+        const { data: volunteer } = await supabase
+          .from('volunteers')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .maybeSingle();
+
+        if (volunteer) {
+          // Check if registered
+          const { data: registration } = await supabase
+            .from('event_registrations')
+            .select('id')
+            .eq('event_id', id)
+            .eq('volunteer_id', volunteer.id)
+            .maybeSingle();
+
+          setIsRegistered(!!registration);
+        }
+      } catch (error) {
+        console.error('Error checking registration:', error);
+      }
+    };
+
+    checkRegistration();
+  }, [currentUserId, id]);
+
   const handleRegister = () => {
-    setIsRegistered(true);
-    // In a real app, this would make an API call to register the user
+    if (!currentUserId) {
+      alert('Please log in to register for events');
+      router.push('/login');
+      return;
+    }
+    setShowSignupModal(true);
+  };
+
+  const handleSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUserId) {
+      alert('Please log in to sign up for events');
+      return;
+    }
+
+    if (!event) return;
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/event-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: event.id,
+          volunteerId: currentUserId,
+          fullName: signupForm.fullName,
+          email: signupForm.email,
+          phone: signupForm.phone,
+          motivation: signupForm.motivation
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to sign up');
+        return;
+      }
+
+      alert('Successfully signed up for the event!');
+      setShowSignupModal(false);
+      setIsRegistered(true);
+
+      // Refresh event data to update participant count
+      const { data: eventData } = await supabase
+        .from("events")
+        .select('*')
+        .eq("id", event.id)
+        .single();
+
+      if (eventData) {
+        setEvent(prev => prev ? { ...prev, current_participants: eventData.current_participants } : null);
+      }
+    } catch (error) {
+      console.error('Error signing up:', error);
+      alert('Failed to sign up for event');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleShare = () => {
@@ -165,19 +323,24 @@ export default function EventDetailsClient() {
   const spotsRemaining = event.max_participants - (event.current_participants || 0);
   const participationRate = ((event.current_participants || 0) / event.max_participants) * 100;
 
-  // Mock data for features not in backend (you can add these to your database later)
-  const mockRequirements = [
-    "Minimum age: 12 years (under 16 must be accompanied by adult)",
-    "Physical ability to participate in outdoor activities",
-    "Commitment to stay for the full duration",
-    "Follow safety guidelines and instructions"
-  ];
+  // Extract event details (handle both single object and array from Supabase)
+  const eventDetails = Array.isArray(event.event_details)
+    ? event.event_details[0]
+    : event.event_details;
 
-  const mockSkills = ["No special skills required", "Environmental awareness", "Teamwork"];
+  // Extract required and preferred skills
+  const requiredSkills = eventDetails?.required_skills || [];
+  const preferredSkills = eventDetails?.preferred_skills || [];
+  const allSkills = [...requiredSkills, ...preferredSkills];
 
-  const mockImpact = {
-    expectedParticipants: `${event.max_participants}+`,
-    communityImpact: "High",
+  // Extract impact data
+  const impactData = {
+    expectedParticipants: eventDetails?.expected_participants
+      ? `${eventDetails.expected_participants}+`
+      : `${event.max_participants}+`,
+    communityImpact: eventDetails?.community_impact_level
+      ? eventDetails.community_impact_level.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+      : "Medium",
     pointsAwarded: `${event.points} pts`
   };
 
@@ -290,38 +453,111 @@ export default function EventDetailsClient() {
               </CardContent>
             </Card>
 
-            {/* Requirements */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Requirements</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {mockRequirements.map((requirement, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 dark:text-gray-300">{requirement}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            {/* Requirements - Materials & What to Bring */}
+            {(eventDetails?.materials_provided || eventDetails?.bring_your_own) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>What We Provide & What to Bring</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {eventDetails?.materials_provided && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2">Materials Provided:</h4>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{eventDetails.materials_provided}</p>
+                    </div>
+                  )}
+                  {eventDetails?.bring_your_own && eventDetails.bring_your_own.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2">Please Bring:</h4>
+                      <ul className="space-y-1">
+                        {eventDetails.bring_your_own.map((item, index) => (
+                          <li key={index} className="flex items-start text-sm">
+                            <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mr-2 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700 dark:text-gray-300">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Skills */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Skills & Experience</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {mockSkills.map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="bg-gray-100 dark:bg-gray-800">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {allSkills.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Skills & Experience</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {requiredSkills.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2">Required:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {requiredSkills.map((skill, index) => (
+                          <Badge key={index} className="bg-emerald-600 hover:bg-emerald-700">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {preferredSkills.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2">Preferred:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {preferredSkills.map((skill, index) => (
+                          <Badge key={index} variant="outline">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {allSkills.length === 0 && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">No special skills required - everyone is welcome!</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Logistics - Accessibility & Transport */}
+            {(eventDetails?.accessibility_info || eventDetails?.parking_info || eventDetails?.public_transport_info) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Getting There & Accessibility</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {eventDetails?.accessibility_info && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Accessibility
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{eventDetails.accessibility_info}</p>
+                    </div>
+                  )}
+                  {eventDetails?.parking_info && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Parking
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{eventDetails.parking_info}</p>
+                    </div>
+                  )}
+                  {eventDetails?.public_transport_info && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Public Transport
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{eventDetails.public_transport_info}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Impact */}
             <Card>
@@ -330,7 +566,7 @@ export default function EventDetailsClient() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {Object.entries(mockImpact).map(([key, value]) => (
+                  {Object.entries(impactData).map(([key, value]) => (
                     <div key={key} className="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
                       <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">
                         {value}
@@ -479,6 +715,147 @@ export default function EventDetailsClient() {
           </div>
         </div>
       </div>
+
+      {/* Signup Modal */}
+      {showSignupModal && event && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-6 rounded-t-xl">
+              <div className="flex justify-between items-start text-white">
+                <div>
+                  <h2 className="text-xl font-bold mb-1">Sign Up for Event</h2>
+                  <p className="text-emerald-100 text-sm">Join this volunteering opportunity</p>
+                </div>
+                <button
+                  onClick={() => setShowSignupModal(false)}
+                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  disabled={submitting}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  {event.title}
+                </h3>
+
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-emerald-600" />
+                    <span>{event.event_date ? new Date(event.event_date).toLocaleDateString() : 'TBA'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-emerald-600" />
+                    <span>{event.location}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 mr-2 text-emerald-600" />
+                    <span>{event.points} points reward</span>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleSignupSubmit}>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter your full name"
+                      value={signupForm.fullName}
+                      onChange={(e) => setSignupForm({...signupForm, fullName: e.target.value})}
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter your email"
+                      value={signupForm.email}
+                      onChange={(e) => setSignupForm({...signupForm, email: e.target.value})}
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter your phone number"
+                      value={signupForm.phone}
+                      onChange={(e) => setSignupForm({...signupForm, phone: e.target.value})}
+                      required
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Why do you want to volunteer for this event?
+                    </label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white"
+                      rows={3}
+                      placeholder="Tell us about your motivation..."
+                      value={signupForm.motivation}
+                      onChange={(e) => setSignupForm({...signupForm, motivation: e.target.value})}
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="flex items-start space-x-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                      required
+                      disabled={submitting}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      I agree to the terms and conditions and understand the volunteer requirements for this event.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Signing up...' : 'Sign Me Up!'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

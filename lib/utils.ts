@@ -13,21 +13,30 @@ export async function signUpVolunteer({ username, email, password }: { username:
     email,
     password,
     options: {
-      data: { role: 'volunteer' },
+      data: {
+        role: 'volunteer',
+        username: username,
+      },
     },
   });
   if (error) return { error };
+
   // Step 2: Create volunteer profile via RPC
   const userId = data.user?.id;
   if (!userId) return { error: { message: 'No user ID returned from signup.' } };
-  const { error: profileError } = await supabase.rpc('create_volunteer_profile', {
-    user_id: userId,
+
+  const { data: volunteerId, error: profileError } = await supabase.rpc('create_volunteer_profile', {
+    user_id_param: userId,
     username_param: username,
     email_param: email,
   });
 
-  if (profileError) return { error: profileError };
-  return { data };
+  if (profileError) {
+    console.error('Error creating volunteer profile:', profileError);
+    return { error: profileError };
+  }
+
+  return { data, volunteerId };
 }
 
 // Sign up company

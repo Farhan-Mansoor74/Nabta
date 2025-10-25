@@ -1,8 +1,10 @@
 // app/api/upcoming-events/route.ts
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
+  const supabase = await createClient();
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -11,11 +13,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // First, get the registrations for this user
+    // Get volunteer profile
+    const { data: volunteer } = await supabase
+      .from('volunteers')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    // If no volunteer profile, return empty array
+    if (!volunteer) {
+      return NextResponse.json([]);
+    }
+
+    // Get the registrations for this volunteer
     const { data: registrations, error: regError } = await supabase
       .from('event_registrations')
       .select('event_id')
-      .eq('volunteer_id', userId);
+      .eq('volunteer_id', volunteer.id)
+      .eq('status', 'registered');
 
     if (regError) {
       console.error('Error fetching registrations:', regError);
@@ -30,10 +45,24 @@ export async function GET(request: Request) {
     // Get the event IDs
     const eventIds = registrations.map(r => r.event_id);
 
-    // Now fetch the actual events
+    // Now fetch the actual events with event_details
     const { data: events, error: eventsError } = await supabase
       .from('events')
-      .select('*')
+      .select(`
+        *,
+        event_details (
+          required_skills,
+          preferred_skills,
+          materials_provided,
+          bring_your_own,
+          accessibility_info,
+          parking_info,
+          public_transport_info,
+          expected_participants,
+          community_impact_level,
+          impact_metrics
+        )
+      `)
       .in('id', eventIds)
       .gte('event_date', new Date().toISOString())
       .order('event_date', { ascending: true });

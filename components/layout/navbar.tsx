@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LucideLeaf, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ThemeToggle from './theme-toggle';
+import { useUser } from '@/hooks/useUser';
 
 const publicRoutes = [
   { name: 'Home', href: '/' },
@@ -18,22 +19,12 @@ const publicRoutes = [
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { user, loading, signOut } = useUser();
 
-  useEffect(() => {
-    // Check token on mount
-    setIsLoggedIn(!!localStorage.getItem("token"));
-
-    // Listen for login/logout changes in other tabs/windows
-    const handleStorage = () => {
-      setIsLoggedIn(!!localStorage.getItem("token"));
-    };
-    window.addEventListener("storage", handleStorage);
-
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+  // Derive isLoggedIn from user state
+  const isLoggedIn = !loading && !!user;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,9 +34,8 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await signOut();
     router.push("/login");
   };
 

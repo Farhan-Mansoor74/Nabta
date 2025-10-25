@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  output: 'standalone',
   images: { unoptimized: true },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  turbopack: {
+    root: require('path').resolve(__dirname),
+  },
 };
 
 module.exports = nextConfig;

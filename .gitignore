@@ -3,6 +3,7 @@
 /.pnp
 .pnp.js
 
+
 # testing
 /coverage
 
@@ -36,3 +37,4 @@ next-env.d.ts
 # bolt AI
 .bolt/
 .env
+.gemini 

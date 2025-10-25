@@ -275,12 +275,15 @@ export default function OpportunitiesList({
       setError(null);
       
       try {
+        // First try to fetch events without join to test basic query
+        console.log('Attempting to fetch events...');
+
         const { data, error } = await supabase
           .from('events')
           .select(`
             id,
             title,
-            organization_id,
+            company_id,
             location,
             event_date,
             start_time,
@@ -292,54 +295,78 @@ export default function OpportunitiesList({
             points,
             featured,
             description,
-            icon_name,
-            status,
-            latitude,
-            longitude,
-            companies!organization_id (
-              company_name
-            )
+            status
           `)
           .eq('status', 'active')
           .order('event_date', { ascending: true });
 
+        console.log('Basic events query result:', { data, error });
+
         if (error) {
-          throw error;
+          console.error('Supabase query error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          throw new Error(`Failed to fetch events: ${error.message}`);
         }
 
+        console.log('Fetched events data:', data);
+
+        if (!data || data.length === 0) {
+          console.warn('No events returned from database');
+          setOpportunities([]);
+          return;
+        }
+
+        // Now fetch company data separately for each event
+        console.log('Fetching company data for events...');
+        const eventsWithCompanies = await Promise.all(
+          data.map(async (event: any) => {
+            const { data: company } = await supabase
+              .from('companies')
+              .select('company_name')
+              .eq('id', event.company_id)
+              .single();
+
+            return {
+              ...event,
+              company_name: company?.company_name || 'Unknown Organization'
+            };
+          })
+        );
+
+        console.log('Events with company data:', eventsWithCompanies);
+
         // Map DB fields to UI model with improved distance handling
-        const mapped = (data || []).map((event: any) => {
+        const mapped = eventsWithCompanies.map((event: any) => {
           // Compose time string
           let time = 'TBA';
           if (event.start_time && event.end_time) {
             time = `${event.start_time.slice(0,5)} - ${event.end_time.slice(0,5)}`;
           }
-          
+
           // Compose date string
           let date = 'Ongoing';
           if (event.event_date) {
-            date = new Date(event.event_date).toLocaleDateString(undefined, { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            date = new Date(event.event_date).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             });
           }
-          
-          // Calculate distance with improved logic
-          const distanceInfo = formatDistance(userLocation, event.latitude, event.longitude);
-          
-          // Handle company name
-          const companyName = event.companies?.company_name || 
-                             (Array.isArray(event.companies) ? event.companies[0]?.company_name : null) ||
-                             'Unknown Organization';
-          
-          // Get icon component dynamically
-          const IconComponent = getIconComponent(event.icon_name);
-          
+
+          // Calculate distance with improved logic (no coordinates available, so show unavailable)
+          const distanceInfo = { display: 'Location unavailable', value: Number.MAX_VALUE };
+
+          // Get icon component dynamically based on category
+          const IconComponent = getIconComponent(event.category);
+
           return {
             id: event.id,
             title: event.title,
-            organization: companyName,
+            organization: event.company_name,
             location: event.location,
             date,
             time,
@@ -353,16 +380,18 @@ export default function OpportunitiesList({
             featured: event.featured,
             description: event.description,
             icon: IconComponent,
-            latitude: event.latitude,
-            longitude: event.longitude,
           };
         });
         
         setOpportunities(mapped);
         console.log('Mapped opportunities:', mapped);
       } catch (err) {
-        console.error('Error fetching opportunities:', err);
-        setError('Failed to load opportunities. Please try again.');
+        console.error('Error fetching opportunities:', {
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined
+        });
+        setError(err instanceof Error ? err.message : 'Failed to load opportunities. Please try again.');
       } finally {
         setLoading(false);
       }
