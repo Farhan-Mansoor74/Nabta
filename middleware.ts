@@ -48,12 +48,23 @@ export async function middleware(req: NextRequest) {
   }
 
   // Optional: Redirect authenticated users away from auth pages
-  const authPages = ['/login', '/signup'];
+  const authPages = ['/login', '/signup', '/volunteer-signup', '/company-signup'];
   const isAuthPage = authPages.some(page => req.nextUrl.pathname.startsWith(page));
-  
+
   if (isAuthPage && session) {
     console.log('Middleware: User already authenticated, redirecting to dashboard');
-    // You can customize this based on user role if needed
+
+    // Check user's role from metadata and redirect accordingly
+    const userRole = session.user?.user_metadata?.role;
+    console.log('Middleware: User role from metadata:', userRole);
+
+    if (userRole === 'volunteer') {
+      return NextResponse.redirect(new URL('/volunteer-dashboard', req.url));
+    } else if (userRole === 'company') {
+      return NextResponse.redirect(new URL('/company-dashboard', req.url));
+    }
+
+    // Fallback: default to company dashboard if no role found
     return NextResponse.redirect(new URL('/company-dashboard', req.url));
   }
 

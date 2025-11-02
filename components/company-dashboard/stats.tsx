@@ -1,17 +1,13 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Users, Calendar, Award, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ApiClient } from '@/lib/apiClient';
+import { useUser } from '@/hooks/useUser';
 
-const stats = [
-  {
-    title: "Active Opportunities",
-    value: "12",
-    change: "+3",
-    changeType: "increase",
-    icon: Calendar,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30"
-  },
+const staticStats = [
   {
     title: "Employee Participation",
     value: "87%",
@@ -42,6 +38,41 @@ const stats = [
 ];
 
 export default function CompanyStats() {
+  const { user } = useUser();
+  const [activeOpportunitiesCount, setActiveOpportunitiesCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActiveOpportunities = async () => {
+      if (!user) return;
+
+      try {
+        const data = await ApiClient.get('/api/companies/opportunities');
+        const activeCount = data.filter((opp: any) => opp.status === 'active').length;
+        setActiveOpportunitiesCount(activeCount);
+      } catch (error) {
+        console.error('Error fetching opportunities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActiveOpportunities();
+  }, [user]);
+
+  const stats = [
+    {
+      title: "Active Opportunities",
+      value: loading ? "..." : String(activeOpportunitiesCount),
+      change: "+0",
+      changeType: "increase",
+      icon: Calendar,
+      color: "text-blue-600 dark:text-blue-400",
+      bgColor: "bg-blue-100 dark:bg-blue-900/30"
+    },
+    ...staticStats
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat) => {

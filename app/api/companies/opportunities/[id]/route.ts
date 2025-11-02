@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function checkUserPermission(supabase: any, userId: string, eventId: string): Promise<{ authorized: boolean; companyId?: string }> {
+    console.log('Checking permission for user:', userId, 'event:', eventId);
+
     const { data: event, error: eventError } = await supabase
         .from('events')
         .select('company_id')
@@ -11,17 +13,29 @@ async function checkUserPermission(supabase: any, userId: string, eventId: strin
         .single();
 
     if (eventError || !event) {
+        console.error('Event fetch error:', eventError);
         return { authorized: false };
     }
 
+    console.log('Event company_id:', event.company_id);
+
     const { data: teamMember, error: teamMemberError } = await supabase
         .from('company_team_members')
-        .select('role')
+        .select('role, status')
         .eq('user_id', userId)
         .eq('company_id', event.company_id)
         .single();
 
     if (teamMemberError || !teamMember) {
+        console.error('Team member fetch error:', teamMemberError, 'Data:', teamMember);
+        return { authorized: false };
+    }
+
+    console.log('Team member found:', teamMember);
+
+    // Check if team member status is accepted
+    if (teamMember.status !== 'accepted') {
+        console.error('Team member status not accepted:', teamMember.status);
         return { authorized: false };
     }
 
@@ -32,9 +46,10 @@ async function checkUserPermission(supabase: any, userId: string, eventId: strin
 }
 
 // GET - Get a specific opportunity
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient();
     try {
+        const { id } = await params;
         const { data: opportunity, error } = await supabase
             .from('events')
             .select(`
@@ -52,7 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
                     impact_metrics
                 )
             `)
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (error) {
@@ -71,7 +86,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 // PUT - Update an opportunity
 // @ts-nocheck
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient();
     try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -79,32 +94,42 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { authorized } = await checkUserPermission(supabase, user.id, params.id);
+        const { id } = await params;
+        const { authorized } = await checkUserPermission(supabase, user.id, id);
         if (!authorized) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await request.json();
+        console.log('Updating event with body:', body);
+
         // ... (rest of the update logic is largely the same)
         const { data: updatedOpportunity, error } = await supabase
             .from('events')
             .update({ ...body, updated_at: new Date().toISOString() })
-            .eq('id', params.id)
+            .eq('id', id)
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
 
+        console.log('Event updated successfully:', updatedOpportunity);
         return NextResponse.json(updatedOpportunity);
     } catch (error) {
         console.error('Error updating opportunity:', error);
-        return NextResponse.json({ error: 'Failed to update opportunity' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to update opportunity',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }
 
 // DELETE - Delete an opportunity
 // @ts-nocheck
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient();
     try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -112,7 +137,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { authorized } = await checkUserPermission(supabase, user.id, params.id);
+        const { id } = await params;
+        const { authorized } = await checkUserPermission(supabase, user.id, id);
         if (!authorized) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
@@ -120,7 +146,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         const { error } = await supabase
             .from('events')
             .delete()
-            .eq('id', params.id);
+            .eq('id', id);
 
         if (error) throw error;
 

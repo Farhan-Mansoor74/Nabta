@@ -59,6 +59,7 @@ interface Event {
   status: string;
   latitude?: number;
   longitude?: number;
+  views?: number;
   companies?: {
     company_name: string;
   } | {
@@ -117,10 +118,11 @@ export default function EventDetailsClient() {
   useEffect(() => {
     async function fetchEvent() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("events")
-        .select(
-          `
+      try {
+        // First fetch the basic event data
+        const { data: eventData, error: eventError } = await supabase
+          .from("events")
+          .select(`
             id,
             title,
             company_id,
@@ -135,37 +137,65 @@ export default function EventDetailsClient() {
             points,
             featured,
             description,
-            status,
-            latitude,
-            longitude,
-            companies (
-              company_name
-            ),
-            event_details (
-              required_skills,
-              preferred_skills,
-              materials_provided,
-              bring_your_own,
-              accessibility_info,
-              parking_info,
-              public_transport_info,
-              expected_participants,
-              community_impact_level,
-              impact_metrics
-            )
-          `
-        )
-        .eq("id", id)
-        .single();
+            status
+          `)
+          .eq("id", id)
+          .single();
 
-      console.log('Event fetch result:', { data, error });
+        console.log('Event fetch result:', { data: eventData, error: eventError });
 
-      if (error) {
+        if (eventError) {
+          console.error('Error fetching event:', eventError);
+          setEvent(null);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch company data separately
+        const { data: companyData } = await supabase
+          .from("companies")
+          .select("company_name")
+          .eq("id", eventData.company_id)
+          .single();
+
+        // Fetch event details separately (if table exists)
+        const { data: detailsData } = await supabase
+          .from("event_details")
+          .select(`
+            required_skills,
+            preferred_skills,
+            materials_provided,
+            bring_your_own,
+            accessibility_info,
+            parking_info,
+            public_transport_info,
+            expected_participants,
+            community_impact_level,
+            impact_metrics
+          `)
+          .eq("event_id", id)
+          .maybeSingle();
+
+        // Combine all data
+        const combinedData = {
+          ...eventData,
+          companies: companyData || { company_name: "Unknown Organization" },
+          event_details: detailsData || {}
+        };
+
+        setEvent(combinedData);
+
+        // Track view (fire and forget - don't wait for response)
+        fetch(`/api/companies/opportunities/${id}/views`, {
+          method: 'POST',
+          credentials: 'include'
+        }).catch(err => console.error('Failed to track view:', err));
+      } catch (err) {
+        console.error('Unexpected error fetching event:', err);
         setEvent(null);
-      } else {
-        setEvent(data);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     if (id) fetchEvent();
   }, [id]);
@@ -430,12 +460,22 @@ export default function EventDetailsClient() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Hero Image */}
-            <div className="relative h-64 md:h-80 rounded-lg overflow-hidden">
-              <img 
-                src={event.image_url} 
-                alt={event.title}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative h-64 md:h-80 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800">
+              {event.image_url ? (
+                <img
+                  src={event.image_url}
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide image on error
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Calendar className="h-24 w-24 text-gray-400 dark:text-gray-600" />
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
             </div>
 

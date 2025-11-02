@@ -20,9 +20,12 @@ import {
 	Trash2,
 	XCircle,
 	CheckCircle2,
-	AlertCircle
+	AlertCircle,
+	Trophy,
+	Lock
 } from 'lucide-react';
 import { ApiClient } from '@/lib/apiClient';
+import EventCompletionDialog from './EventCompletionDialog';
 
 export type Participant = {
 	id: string;
@@ -39,9 +42,22 @@ interface ParticipantsDialogProps {
 	onOpenChange: (open: boolean) => void;
 	eventTitle: string;
 	eventId?: string;
+	eventStatus?: string;
+	eventFinalized?: boolean;
+	eventStartTime?: string;
+	eventEndTime?: string;
 }
 
-export default function ParticipantsDialog({ open, onOpenChange, eventTitle, eventId }: ParticipantsDialogProps) {
+export default function ParticipantsDialog({
+	open,
+	onOpenChange,
+	eventTitle,
+	eventId,
+	eventStatus,
+	eventFinalized,
+	eventStartTime,
+	eventEndTime
+}: ParticipantsDialogProps) {
 	const [query, setQuery] = useState('');
 	const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'registered' | 'attended' | 'cancelled'>('all');
 	const [sortBy, setSortBy] = useState<'name' | 'email' | 'status'>('name');
@@ -50,6 +66,10 @@ export default function ParticipantsDialog({ open, onOpenChange, eventTitle, eve
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
+
+	const isCompleted = eventStatus === 'completed';
+	const needsFinalization = isCompleted && !eventFinalized;
 
 	// Fetch participants when dialog opens
 	useEffect(() => {
@@ -254,9 +274,44 @@ export default function ParticipantsDialog({ open, onOpenChange, eventTitle, eve
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
 				<DialogHeader>
-					<DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-						Participants — {eventTitle}
-					</DialogTitle>
+					<div className="flex items-center justify-between">
+						<div>
+							<DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+								Participants — {eventTitle}
+							</DialogTitle>
+							{eventFinalized && (
+								<div className="flex items-center gap-2 mt-1">
+									<Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 flex items-center gap-1">
+										<Lock className="h-3 w-3" />
+										Finalized
+									</Badge>
+									<span className="text-xs text-gray-500 dark:text-gray-400">Event has been finalized</span>
+								</div>
+							)}
+						</div>
+					</div>
+					{needsFinalization && (
+						<div className="mt-2 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg">
+							<div className="flex items-start gap-3">
+								<Trophy className="h-6 w-6 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
+								<div className="flex-1">
+									<h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+										Event Completed! Ready to Finalize
+									</h3>
+									<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+										This event has ended. Review volunteer attendance, adjust hours worked, and finalize the event to award points.
+									</p>
+									<Button
+										onClick={() => setCompletionDialogOpen(true)}
+										className="bg-emerald-600 hover:bg-emerald-700"
+									>
+										<Trophy className="h-4 w-4 mr-2" />
+										Finalize Attendance & Hours
+									</Button>
+								</div>
+							</div>
+						</div>
+					)}
 					{error && (
 						<div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-start gap-2">
 							<AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -536,6 +591,35 @@ export default function ParticipantsDialog({ open, onOpenChange, eventTitle, eve
 					</div>
 				</Tabs>
 			</DialogContent>
+
+			{/* Event Completion Dialog */}
+			{eventId && (
+				<EventCompletionDialog
+					open={completionDialogOpen}
+					onOpenChange={setCompletionDialogOpen}
+					eventId={eventId}
+					eventTitle={eventTitle}
+					eventStartTime={eventStartTime}
+					eventEndTime={eventEndTime}
+					onComplete={() => {
+						// Refresh participants list
+						if (open && eventId) {
+							const fetchParticipants = async () => {
+								setLoading(true);
+								try {
+									const data = await ApiClient.get(`/api/companies/opportunities/${eventId}/participants`);
+									setRows(data);
+								} catch (err) {
+									console.error('Error fetching participants:', err);
+								} finally {
+									setLoading(false);
+								}
+							};
+							fetchParticipants();
+						}
+					}}
+				/>
+			)}
 		</Dialog>
 	);
 } 

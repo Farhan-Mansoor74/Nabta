@@ -1,8 +1,10 @@
 // app/api/calendar-events/route.ts
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
+  const supabase = await createClient();
+
   try {
     const { searchParams } = new URL(request.url);
     const start = searchParams.get('start');
@@ -43,6 +45,7 @@ export async function GET(request: Request) {
         location: event.location,
         points: event.points,
         category: event.category,
+        image_url: event.image_url,
       };
     });
 

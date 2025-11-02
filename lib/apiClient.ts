@@ -122,10 +122,10 @@ export class ApiClient {
         : await response.text().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(
-          (data && (data.error || data.message)) ||
-            `HTTP error ${response.status}`
-        );
+        const errorMsg = data && (data.error || data.message)
+          ? `${data.error || data.message}${data.details ? ': ' + data.details : ''}`
+          : `HTTP error ${response.status}`;
+        throw new Error(errorMsg);
       }
 
       return data;

@@ -79,15 +79,61 @@ export default function LoginPage() {
         return;
       }
 
-      // If volunteer type was selected and no company association
-      if (type === 'volunteer') {
-        console.log('Redirecting to volunteer dashboard');
+      // Check user's role from metadata (set during signup)
+      const userRole = data.user?.user_metadata?.role;
+      console.log('User role from metadata:', userRole);
+
+      if (userRole === 'volunteer') {
+        console.log('Redirecting volunteer to volunteer dashboard');
         router.push('/volunteer-dashboard');
         return;
       }
 
-      // Default: redirect to home
-      console.log('Redirecting to home');
+      if (userRole === 'company') {
+        console.log('Redirecting company user to company dashboard');
+        router.push('/company-dashboard');
+        return;
+      }
+
+      // Fallback: Check if user has a volunteer profile in database
+      const { data: volunteerProfile } = await supabase
+        .from('volunteers')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (volunteerProfile) {
+        console.log('Found volunteer profile, redirecting to volunteer dashboard');
+        router.push('/volunteer-dashboard');
+        return;
+      }
+
+      // Fallback: Check if user has a company profile in database
+      const { data: companyProfile } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (companyProfile) {
+        console.log('Found company profile, redirecting to company dashboard');
+        router.push('/company-dashboard');
+        return;
+      }
+
+      // Final fallback: Use the tab selection type
+      if (type === 'volunteer') {
+        console.log('Using tab selection, redirecting to volunteer dashboard');
+        router.push('/volunteer-dashboard');
+        return;
+      } else if (type === 'company') {
+        console.log('Using tab selection, redirecting to company dashboard');
+        router.push('/company-dashboard');
+        return;
+      }
+
+      // Default: redirect to home (only if no role found anywhere)
+      console.log('No role found, redirecting to home');
       router.push('/');
 
     } catch (err: any) {

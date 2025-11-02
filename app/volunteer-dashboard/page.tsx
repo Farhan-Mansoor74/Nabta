@@ -495,30 +495,6 @@ export default function VolunteerDashboard() {
     { id: "profile", label: "Profile", icon: User },
   ];
 
-  const exclusiveEvents = [
-    {
-      id: 1,
-      title: "F1 Grand Prix Volunteering",
-      date: "June 15-17, 2025",
-      location: "Yas Marina Circuit",
-      points: 1500,
-    },
-    {
-      id: 2,
-      title: "Middle East Film Festival",
-      date: "May 20-25, 2025",
-      location: "Dubai Opera",
-      points: 1200,
-    },
-    {
-      id: 3,
-      title: "Comic Con Volunteering",
-      date: "July 8-10, 2025",
-      location: "Dubai World Trade Centre",
-      points: 1000,
-    },
-  ];
-
   const availableRewards = [
     { id: 1, title: "Desert Conservation Experience", points: 800, eligible: true },
     { id: 2, title: "Sustainable Business Conference Pass", points: 1200, eligible: false },
@@ -607,47 +583,6 @@ export default function VolunteerDashboard() {
                       setShowMobileFilters={setShowMobileFilters}
                       onLearnMore={handleLearnMore}
                     />
-
-                    <div className="mt-12">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">Exclusive Events</h2>
-                        <span className="text-emerald-600 text-sm font-medium">
-                          Your Points: {userStats.points}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 mb-6">
-                        Unlock premium volunteering experiences with your earned points
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {exclusiveEvents.map((event) => (
-                          <div
-                            key={event.id}
-                            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-                          >
-                            <div className="h-40 bg-gray-300 dark:bg-gray-700 relative">
-                              <div className="absolute top-3 right-3 bg-emerald-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                {event.points} points
-                              </div>
-                            </div>
-                            <div className="p-4">
-                              <h3 className="font-bold text-lg mb-2">{event.title}</h3>
-                              <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
-                                <CalendarIcon className="h-4 w-4 mr-2" />
-                                <span className="text-sm">{event.date}</span>
-                              </div>
-                              <div className="flex items-center text-gray-600 dark:text-gray-400 mb-4">
-                                <MapPin className="h-4 w-4 mr-2" />
-                                <span className="text-sm">{event.location}</span>
-                              </div>
-                              <button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-md font-medium transition">
-                                Redeem Points
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

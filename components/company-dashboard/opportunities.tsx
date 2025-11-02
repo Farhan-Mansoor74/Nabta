@@ -5,15 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  Users, 
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Users,
   Calendar,
   MapPin,
   Eye,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Plus,
+  Download,
+  Trophy,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,30 +44,33 @@ export default function CompanyOpportunities() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch opportunities from backend
-  useEffect(() => {
-    const fetchOpportunities = async () => {
-      if (!user) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const data = await ApiClient.get('/api/companies/opportunities');
-        setItems(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch opportunities');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchOpportunities = async () => {
+    if (!user) return;
 
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await ApiClient.get('/api/companies/opportunities');
+      setItems(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch opportunities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (user) {
       fetchOpportunities();
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch once on mount, not on user changes
 
   const filteredOpportunities = items.filter(opp => {
     if (activeTab === "all") return true;
+    if (activeTab === "finalized") return opp.finalized === true;
+    if (activeTab === "completed") return opp.status === 'completed' && !opp.finalized;
     return opp.status === activeTab;
   });
 
@@ -88,6 +97,28 @@ export default function CompanyOpportunities() {
     setSelected(opp);
     // Small delay to ensure state is set
     setTimeout(() => setParticipantsOpen(true), 0);
+  };
+
+  const handleExport = async (opp: Opportunity) => {
+    if (!opp.id) return;
+
+    try {
+      const response = await fetch(`/api/companies/opportunities/${opp.id}/export`);
+      if (!response.ok) throw new Error('Failed to export');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `event_${opp.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error exporting:', err);
+      setError('Failed to export event data');
+    }
   };
 
   const handleSave = async (updated: Opportunity) => {
@@ -142,8 +173,33 @@ export default function CompanyOpportunities() {
   return (
     <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
       <CardHeader className="pb-4">
-        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Your Opportunities</CardTitle>
-        <p className="text-gray-600 dark:text-gray-400">Manage and track your volunteering events</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Your Opportunities</CardTitle>
+            <p className="text-gray-600 dark:text-gray-400">Manage and track your volunteering events</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchOpportunities}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              onClick={() => {
+                setSelected(null);
+                setEditorOpen(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          </div>
+        </div>
         {error && (
           <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -152,11 +208,21 @@ export default function CompanyOpportunities() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="draft">Draft</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="completed">
+              <span className="flex items-center gap-1">
+                Completed
+                {items.filter(i => i.status === 'completed' && !i.finalized).length > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 text-xs">
+                    {items.filter(i => i.status === 'completed' && !i.finalized).length}
+                  </Badge>
+                )}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="finalized">Finalized</TabsTrigger>
           </TabsList>
           
           <TabsContent value={activeTab} className="mt-6">
@@ -180,6 +246,18 @@ export default function CompanyOpportunities() {
                         <Badge className={getStatusColor(opportunity.status)}>
                           {opportunity.status}
                         </Badge>
+                        {opportunity.status === 'completed' && !opportunity.finalized && (
+                          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Needs Review
+                          </Badge>
+                        )}
+                        {opportunity.finalized && (
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            Finalized
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -216,9 +294,15 @@ export default function CompanyOpportunities() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleViewParticipants(opportunity)}>
                           <Users className="h-4 w-4 mr-2" />
-                          View Participants
+                          {opportunity.status === 'completed' && !opportunity.finalized
+                            ? 'Finalize Attendance'
+                            : 'View Participants'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem onClick={() => handleExport(opportunity)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export to Excel
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           className="text-red-600 dark:text-red-400"
                           onClick={() => handleDelete(opportunity)}
                         >
@@ -270,6 +354,10 @@ export default function CompanyOpportunities() {
         onOpenChange={setParticipantsOpen}
         eventTitle={selected?.title ?? ''}
         eventId={selected?.id}
+        eventStatus={selected?.status}
+        eventFinalized={selected?.finalized}
+        eventStartTime={selected?.start_time}
+        eventEndTime={selected?.end_time}
       />
     </Card>
   );

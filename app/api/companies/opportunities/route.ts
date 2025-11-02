@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, NextRequest } from 'next/server';
+import { getEventsToAutoComplete } from '@/lib/eventUtils';
 
 // GET - Get all opportunities/events for the authenticated user's company
 export async function GET(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all events for this company with event_details
-    const { data: events, error: eventsError } = await supabase
+    const { data: fetchedEvents, error: eventsError } = await supabase
       .from('events')
       .select(`
         *,
@@ -47,6 +48,37 @@ export async function GET(request: NextRequest) {
     if (eventsError) {
       console.error('Database error:', eventsError);
       throw eventsError;
+    }
+
+    let events = fetchedEvents;
+
+    // Auto-complete events that have ended 12+ hours ago
+    if (events && events.length > 0) {
+      const eventsToComplete = getEventsToAutoComplete(events);
+
+      if (eventsToComplete.length > 0) {
+        console.log(`Auto-completing ${eventsToComplete.length} events`);
+
+        // Update events to 'completed' status
+        const eventIds = eventsToComplete.map(e => e.id);
+        const { error: updateError } = await supabase
+          .from('events')
+          .update({ status: 'completed', updated_at: new Date().toISOString() })
+          .in('id', eventIds);
+
+        if (updateError) {
+          console.error('Error auto-completing events:', updateError);
+          // Don't throw - continue with existing data
+        } else {
+          // Update the status in the returned events
+          events = events.map(event => {
+            if (eventIds.includes(event.id)) {
+              return { ...event, status: 'completed' };
+            }
+            return event;
+          });
+        }
+      }
     }
 
     return NextResponse.json(events || []);

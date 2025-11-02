@@ -49,6 +49,9 @@ export type Opportunity = {
 	organization_id?: string;
 	views?: number;
 	event_details?: EventDetails;
+	finalized?: boolean;
+	finalized_at?: string;
+	finalized_by?: string;
 };
 
 interface EventEditorDialogProps {
@@ -73,18 +76,14 @@ async function saveEvent(eventData: Opportunity) {
 		title: eventData.title,
 		category: eventData.category,
 		location: eventData.location,
-		latitude: eventData.latitude ? Number(eventData.latitude) : null,
-		longitude: eventData.longitude ? Number(eventData.longitude) : null,
 		image_url: eventData.image_url || null,
 		event_date: eventData.event_date && eventData.event_date !== "" ? eventData.event_date : new Date().toISOString().split("T")[0],
 		start_time: eventData.start_time && eventData.start_time !== "" ? eventData.start_time : null,
 		end_time: eventData.end_time && eventData.end_time !== "" ? eventData.end_time : null,
-		capacity: eventData.capacity ?? null,
 		max_participants: eventData.max_participants ?? eventData.capacity ?? null,
 		current_participants: eventData.current_participants ?? 0,
 		points: eventData.points ?? 0,
 		status: eventData.status || "draft",
-		icon_name: eventData.icon_name || null,
 		featured: eventData.featured ?? false,
 		description: eventData.description || null,
 	};
@@ -193,6 +192,28 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 			setImagePreview(initialForm.image_url || '');
 		}
 	}, [opportunity, open]);
+
+	// Auto-calculate points based on event duration (1 hour = 10 points)
+	useEffect(() => {
+		if (form.start_time && form.end_time) {
+			const [startHour, startMinute] = form.start_time.split(':').map(Number);
+			const [endHour, endMinute] = form.end_time.split(':').map(Number);
+
+			const startTimeInMinutes = startHour * 60 + startMinute;
+			const endTimeInMinutes = endHour * 60 + endMinute;
+
+			if (endTimeInMinutes > startTimeInMinutes) {
+				const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+				const durationInHours = durationInMinutes / 60;
+				const calculatedPoints = Math.round(durationInHours * 10);
+
+				// Only update if points changed to avoid infinite loop
+				if (form.points !== calculatedPoints) {
+					setForm(prev => ({ ...prev, points: calculatedPoints }));
+				}
+			}
+		}
+	}, [form.start_time, form.end_time]);
 
 	const handleChange = (key: keyof Opportunity, value: string | number | boolean) => {
 		setForm({ ...form, [key]: value } as Opportunity);
@@ -387,27 +408,70 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 							<Input id="event_date" type="date" className="pl-9" value={form.event_date || ''} onChange={(e) => handleChange('event_date', e.target.value)} />
 						</div>
 					</div>
-					<div className="space-y-2 grid grid-cols-2 gap-4 md:col-span-1">
-						<div>
-							<Label htmlFor="start_time">Start Time</Label>
-							<Input id="start_time" type="time" value={form.start_time || ''} onChange={(e) => handleChange('start_time', e.target.value)} />
+					<div className="space-y-2 md:col-span-2">
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<Label htmlFor="start_time">Start Time</Label>
+								<Input id="start_time" type="time" value={form.start_time || ''} onChange={(e) => handleChange('start_time', e.target.value)} />
+							</div>
+							<div>
+								<Label htmlFor="end_time">End Time</Label>
+								<Input id="end_time" type="time" value={form.end_time || ''} onChange={(e) => handleChange('end_time', e.target.value)} />
+							</div>
 						</div>
-						<div>
-							<Label htmlFor="end_time">End Time</Label>
-							<Input id="end_time" type="time" value={form.end_time || ''} onChange={(e) => handleChange('end_time', e.target.value)} />
-						</div>
+						{form.start_time && form.end_time && (() => {
+							const [startHour, startMinute] = form.start_time.split(':').map(Number);
+							const [endHour, endMinute] = form.end_time.split(':').map(Number);
+							const startTimeInMinutes = startHour * 60 + startMinute;
+							const endTimeInMinutes = endHour * 60 + endMinute;
+
+							if (endTimeInMinutes > startTimeInMinutes) {
+								const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+								const hours = Math.floor(durationInMinutes / 60);
+								const minutes = durationInMinutes % 60;
+								const calculatedPoints = Math.round((durationInMinutes / 60) * 10);
+
+								return (
+									<div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+										<div className="flex items-center gap-2 text-sm">
+											<span className="text-emerald-700 dark:text-emerald-300 font-medium">
+												Duration: {hours}h {minutes > 0 ? `${minutes}m` : ''}
+											</span>
+											<span className="text-emerald-600 dark:text-emerald-400">→</span>
+											<span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+												{calculatedPoints} Points
+											</span>
+										</div>
+									</div>
+								);
+							}
+							return null;
+						})()}
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="capacity">Capacity</Label>
+						<Label htmlFor="max_participants">Registration Limit</Label>
 						<div className="relative">
 							<Users className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" />
-							<Input id="capacity" type="number" className="pl-9" value={form.capacity || 0} onChange={(e) => handleChange('capacity', Number(e.target.value))} />
+							<Input
+								id="max_participants"
+								type="number"
+								min="0"
+								className="pl-9"
+								value={form.max_participants ?? 0}
+								onChange={(e) => {
+									const value = Number(e.target.value) || 0;
+									setForm(prev => ({
+										...prev,
+										max_participants: value,
+										capacity: value
+									}));
+								}}
+							/>
 						</div>
-					</div>
-					<div className="space-y-2">
-						<Label htmlFor="max_participants">Max Participants</Label>
-						<Input id="max_participants" type="number" value={form.max_participants || form.capacity || 0} onChange={(e) => handleChange('max_participants', Number(e.target.value))} />
+						<p className="text-xs text-gray-500 dark:text-gray-400">
+							Maximum number of volunteers who can register
+						</p>
 					</div>
 
 					<div className="space-y-2">
@@ -415,8 +479,17 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 						<Input id="current_participants" type="number" value={form.current_participants || 0} onChange={(e) => handleChange('current_participants', Number(e.target.value))} />
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="points">Points</Label>
-						<Input id="points" type="number" value={form.points || 0} onChange={(e) => handleChange('points', Number(e.target.value))} />
+						<Label htmlFor="points">Points (Auto-calculated)</Label>
+						<Input
+							id="points"
+							type="number"
+							value={form.points || 0}
+							disabled
+							className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+						/>
+						<p className="text-xs text-gray-500 dark:text-gray-400">
+							Points are automatically calculated: 10 points per hour
+						</p>
 					</div>
 
 					<div className="space-y-2">
@@ -592,14 +665,17 @@ export default function EventEditorDialog({ open, onOpenChange, opportunity, onS
 			<TabsContent value="impact" className="space-y-4 mt-4">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div className="space-y-2">
-						<Label htmlFor="expected">Expected Participants</Label>
+						<Label htmlFor="expected">Expected Turnout (Estimate)</Label>
 						<Input
 							id="expected"
 							type="number"
-							placeholder="How many people do you expect?"
+							placeholder="How many people do you expect to show up?"
 							value={form.event_details?.expected_participants || 0}
 							onChange={(e) => handleDetailsChange('expected_participants', Number(e.target.value) || 0)}
 						/>
+						<p className="text-xs text-gray-500 dark:text-gray-400">
+							Your estimate of actual attendees (may differ from registration limit)
+						</p>
 					</div>
 
 					<div className="space-y-2">

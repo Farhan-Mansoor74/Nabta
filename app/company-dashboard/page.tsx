@@ -58,7 +58,7 @@ export default function CompanyDashboardPage() {
                 <CompanyTeam />
               </div>
             </div>
-            <CompanyImpact />
+            {/* <CompanyImpact /> */}
           </div>
         </div>
 

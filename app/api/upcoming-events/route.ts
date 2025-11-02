@@ -94,6 +94,7 @@ export async function GET(request: Request) {
         location: event.location,
         points: event.points,
         category: event.category,
+        image_url: event.image_url,
       };
     });
 

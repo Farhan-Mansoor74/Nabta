@@ -65,6 +65,7 @@ export async function GET(request: Request) {
       eventDate: event.event_date,
       startTime: event.start_time,
       endTime: event.end_time,
+      image_url: event.image_url,
     }));
 
     return NextResponse.json(events);
